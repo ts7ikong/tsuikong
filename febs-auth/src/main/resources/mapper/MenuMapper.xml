@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cc.mrbird.febs.auth.mapper.MenuMapper">
+
+    <select id="findUserPermissions" resultType="cc.mrbird.febs.common.core.entity.system.Menu">
+        select distinct m.perms
+        from t_role r
+        left join t_user_role ur on (r.role_id = ur.role_id)
+        left join t_user u on (u.user_id = ur.user_id)
+        left join t_role_menu rm on (rm.role_id = r.role_id)
+        left join t_menu m on (m.menu_id = rm.menu_id)
+        <where>
+            m.perms is not null and r.IS_DELETE = 0
+            and m.perms &lt;&gt; '' and m.type = 1
+            <if test="username != null and username !=''">
+                and u.username = #{username}
+            </if>
+        </where>
+    </select>
+    <select id="getTypeMenuIds" resultType="java.util.Map">
+        SELECT CLASS_TYPE as type, GROUP_CONCAT(DISTINCT MENU_ID) as menuIds
+        from t_menu
+        where TYPE = 1
+        GROUP BY CLASS_TYPE
+        ORDER BY CLASS_TYPE
+    </select>
+
+    <resultMap type="cc.mrbird.febs.common.core.entity.system.MenuUserAuthDto" id="maps">
+        <result property="type" column="CLASS_TYPE"/>
+        <collection property="menus" ofType="cc.mrbird.febs.common.core.entity.system.MenuUserAuthDto$MenuButtonDto"
+                    resultMap="menus"/>
+    </resultMap>
+    <resultMap id="menus" type="cc.mrbird.febs.common.core.entity.system.MenuUserAuthDto$MenuButtonDto">
+        <result property="menuId" column="MENU_ID"/>
+        <result property="type" column="CLASS_TYPE"/>
+        <result property="roleType" column="ROLE_TYPE"/>
+        <result property="projectIds" column="projectIds"/>
+        <collection property="buttons" ofType="cc.mrbird.febs.common.core.entity.system.MenuUserAuthDto$ButtonDto"
+                    resultMap="buttons"/>
+    </resultMap>
+    <resultMap id="buttons" type="cc.mrbird.febs.common.core.entity.system.MenuUserAuthDto$ButtonDto">
+        <result property="buttonId" column="BUTTON_ID"/>
+        <result property="projectIds" column="buttonProjectIds"/>
+    </resultMap>
+    <select id="getMenuUserAuth" resultType="cc.mrbird.febs.common.core.entity.system.MenuUserAuthDto$MenuButtonDto"
+            resultMap="menus">
+        SELECT m.CLASS_TYPE                                                                                                   AS CLASS_TYPE,
+               m.MENU_ID                                                                                                      AS MENU_ID,
+               GROUP_CONCAT(DISTINCT CASE WHEN ur.PROJECT_ID !=- 1 THEN ur.PROJECT_ID ELSE m.m_PROJECT_ID END )               AS projectIds,
+               IFNULL(m.BUTTON_ID, - 1)                                                                                       AS BUTTON_ID,
+               GROUP_CONCAT(DISTINCT CASE WHEN ur.PROJECT_ID !=- 1 THEN ur.PROJECT_ID ELSE IFNULL( m.b_PROJECT_ID,- 1 ) END ) AS buttonProjectIds,
+               MAX(ur.TYPE)                                                                                                   AS ROLE_TYPE
+        FROM (SELECT ur.ROLE_ID, ur.PROJECT_ID, r.TYPE
+              FROM (SELECT ur.ROLE_ID, ur.PROJECT_ID FROM t_user_role ur WHERE ur.USER_ID = #{userId}) ur
+                       LEFT JOIN t_role r ON r.ROLE_ID = ur.ROLE_ID
+              where r.IS_DELETE = 0) ur
+                 LEFT JOIN (
+            SELECT m.CLASS_TYPE,
+                   m.MENU_ID,
+                   m.ROLE_ID,
+                   m.PROJECT_ID m_PROJECT_ID,
+                   b.BUTTON_ID,
+                   b.PROJECT_ID b_PROJECT_ID
+            FROM (
+                     SELECT m.CLASS_TYPE,
+                            m.MENU_ID,
+                            rm.ROLE_ID,
+                            rm.PROJECT_ID
+                     FROM t_role_menu rm
+                              LEFT JOIN t_menu m ON m.MENU_ID = rm.MENU_ID
+                 ) m
+                     LEFT JOIN (
+                SELECT b.BUTTON_ID,
+                       rb.ROLE_ID,
+                       rb.PROJECT_ID,
+                       b.BUTTON_MENUID
+                FROM t_role_button rb
+                         LEFT JOIN t_button b ON rb.BUTTON_ID = b.BUTTON_ID
+            ) b ON m.ROLE_ID = b.ROLE_ID
+                AND m.MENU_ID = b.BUTTON_MENUID
+        ) m ON m.ROLE_ID = ur.ROLE_ID
+        WHERE m.MENU_ID IS NOT NULL
+        GROUP BY m.CLASS_TYPE, m.MENU_ID, m.BUTTON_ID
+        ORDER BY m.CLASS_TYPE, m.MENU_ID, m.BUTTON_ID
+    </select>
+    <select id="getAllProject" resultType="java.util.Map">
+        SELECT GROUP_CONCAT(DISTINCT ur.PROJECT_ID + '' ) AS projectId1,
+               CASE
+                   WHEN ur.ROLE_ID = 1 THEN
+                       (SELECT GROUP_CONCAT(p.PROJECT_ID) FROM p_project p WHERE p.IS_DELETE = 0)
+                   ELSE (SELECT GROUP_CONCAT(DISTINCT rm.PROJECT_ID + '' )
+                         FROM t_role_menu rm
+                         WHERE rm.ROLE_ID = ur.ROLE_ID
+                         GROUP BY rm.ROLE_ID)
+                   END                                    AS projectId2
+        FROM t_user_role ur
+        WHERE ur.USER_ID = #{userId}
+        GROUP BY ur.USER_ID
+    </select>
+</mapper>

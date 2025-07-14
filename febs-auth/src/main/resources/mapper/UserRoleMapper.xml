@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cc.mrbird.febs.auth.mapper.UserRoleMapper">
+
+    <select id="getUserRoleByUserId" resultType="java.lang.String">
+        SELECT GROUP_CONCAT(CONCAT(ur.ROLE_ID, '')) test
+        FROM t_user u
+                 LEFT JOIN t_user_role ur ON u.USER_ID = ur.USER_ID
+        WHERE u.USER_ID = #{userId}
+        GROUP BY u.USER_ID
+    </select>
+    <!--    <select id="getSpecialPermissionsByUserId" resultType="java.lang.Long">-->
+    <!--        SELECT ur.ROLE_ID,-->
+    <!--               (SELECT r.TYPE FROM t_role r WHERE r.ROLE_ID = ur.ROLE_ID) TYPE-->
+    <!--        FROM t_user u-->
+    <!--                 LEFT JOIN t_user_role ur ON u.USER_ID = ur.USER_ID-->
+    <!--        WHERE u.USER_ID = #{userId};-->
+    <!--    </select>-->
+    <select id="getAllProjectIds" resultType="java.lang.Long">
+        SELECT p.PROJECT_ID
+        from p_project p
+        where p.IS_DELETE = 0
+    </select>
+    <select id="getAllProject" resultType="java.util.Map">
+        SELECT GROUP_CONCAT(DISTINCT ur.PROJECT_ID + '' ) AS projectId1,
+               CASE
+                   WHEN ur.ROLE_ID = 1
+                       THEN
+                       (SELECT GROUP_CONCAT(p.PROJECT_ID) FROM p_project p WHERE p.IS_DELETE = 0)
+                   ELSE
+                       (SELECT GROUP_CONCAT(DISTINCT rm.PROJECT_ID + '' ) FROM t_role_menu rm WHERE rm.ROLE_ID in (select ROLE_ID FROM t_user_role WHERE USER_ID = #{userId}))
+                   END
+                                                          AS projectId2
+        FROM
+                (select * FROM t_user_role ur WHERE ur.USER_ID = #{userId} ) ur
+        GROUP BY ur.USER_ID
+    </select>
+<!--    <select id="getAllProject" resultType="java.util.Map">-->
+<!--        SELECT GROUP_CONCAT(DISTINCT ur.PROJECT_ID + '' ) AS projectId1,-->
+<!--               CASE-->
+<!--                   WHEN ur.ROLE_ID = 1 THEN-->
+<!--                       (SELECT GROUP_CONCAT(p.PROJECT_ID) FROM p_project p WHERE p.IS_DELETE = 0)-->
+<!--                   ELSE (SELECT GROUP_CONCAT(DISTINCT rm.PROJECT_ID + '' )-->
+<!--                         FROM t_role_menu rm-->
+<!--                         WHERE rm.ROLE_ID = ur.ROLE_ID-->
+<!--                         GROUP BY rm.ROLE_ID)-->
+<!--                   END                                    AS projectId2-->
+<!--        FROM t_user_role ur-->
+<!--        WHERE ur.USER_ID = #{userId}-->
+<!--        GROUP BY ur.USER_ID-->
+<!--    </select>-->
+</mapper>
