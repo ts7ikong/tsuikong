@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cc.mrbird.febs.server.tjdkxm.mapper.AskfleaveMapper">
+
+    <select id="selectPageInfo" resultType="cc.mrbird.febs.common.core.entity.tjdkxm.Askfleave">
+        SELECT
+        p.ASKFLEAVE_ID,
+        p.ASKFLEAVE_PROJECTID,
+        ( SELECT PROJECT_NAME FROM p_project WHERE PROJECT_ID = p.ASKFLEAVE_PROJECTID ) AS projectName,
+        p.ASKFLEAVE_CAUSE,
+        p.ASKFLEAVE_STARTTIME,
+        p.ASKFLEAVE_ENDTIME,
+        p.ASKFLEAVE_CREATETIME,
+        p.ASKFLEAVE_CREATEUSERID,
+        ( SELECT REALNAME FROM t_user WHERE USER_ID = p.ASKFLEAVE_CREATEUSERID ) AS askfleaveCreateusername,
+        p.ASKFLEAVE_CHECKTIME,
+        p.ASKFLEAVE_CHECKUSERID,
+        (SELECT GROUP_CONCAT(REALNAME ORDER BY FIELD(USER_ID, p.ASKFLEAVE_CHECKUSERID) DESC) FROM t_user WHERE
+        FIND_IN_SET(USER_ID, p.ASKFLEAVE_CHECKUSERID)) AS askfleaveCheckusername,
+        p.ASKFLEAVE_CHECKSTATE,
+        p.ASKFLEAVE_CHECKREASON,
+        p.IS_DELETE,
+        p.ASKFLEAVE_CHECKNODE,
+        p.ASKFLEAVE_CHECKRECORD
+        FROM
+        p_askfleave p
+        where 1=1
+        <if test="ew != null">
+            <if test="ew.nonEmptyOfWhere">
+                AND
+            </if>
+            ${ew.sqlSegment}
+        </if>
+        ORDER BY
+        CASE
+        ASKFLEAVE_CHECKSTATE
+        WHEN 0 THEN
+        0
+        WHEN 3 THEN
+        1
+        WHEN 1 THEN
+        2
+        WHEN 2 THEN
+        3 ELSE 4
+        END,
+        ASKFLEAVE_CREATETIME DESC
+    </select>
+    <select id="selectPageInfo1" resultType="cc.mrbird.febs.common.core.entity.tjdkxm.Askfleave">
+        SELECT
+        p.ASKFLEAVE_ID,
+        p.ASKFLEAVE_PROJECTID,
+        ( SELECT PROJECT_NAME FROM p_project WHERE PROJECT_ID = p.ASKFLEAVE_PROJECTID ) AS projectName,
+        p.ASKFLEAVE_CAUSE,
+        p.ASKFLEAVE_STARTTIME,
+        p.ASKFLEAVE_ENDTIME,
+        p.ASKFLEAVE_CREATETIME,
+        p.ASKFLEAVE_CREATEUSERID,
+        ( SELECT REALNAME FROM t_user WHERE USER_ID = p.ASKFLEAVE_CREATEUSERID ) AS askfleaveCreateusername,
+        p.ASKFLEAVE_CHECKTIME,
+        p.ASKFLEAVE_CHECKUSERID,
+        (SELECT GROUP_CONCAT(REALNAME ORDER BY FIELD(USER_ID, p.ASKFLEAVE_CHECKUSERID) DESC) FROM t_user WHERE
+        FIND_IN_SET(USER_ID, p.ASKFLEAVE_CHECKUSERID)) AS askfleaveCheckusername,
+        p.ASKFLEAVE_CHECKSTATE,
+        p.ASKFLEAVE_CHECKREASON,
+        p.IS_DELETE,
+        p.ASKFLEAVE_CHECKNODE,
+        p.ASKFLEAVE_CHECKRECORD
+        FROM
+        p_askfleave p
+        where 1=1
+        <if test="ew != null">
+            <if test="ew.nonEmptyOfWhere">
+                AND
+            </if>
+            ${ew.sqlSegment}
+        </if>
+        ORDER BY
+        ASKFLEAVE_CREATETIME DESC
+    </select>
+    <select id="selectInfoById" resultType="com.alibaba.fastjson.JSONObject">
+        SELECT p.ASKFLEAVE_ID                                                        AS 请假ID,
+               p.ASKFLEAVE_CAUSE                                                     AS 请假原因,
+               DATE_FORMAT(p.ASKFLEAVE_STARTTIME, '%Y-%m-%d %H:%i:%s')               AS 请假开始时间,
+               DATE_FORMAT(p.ASKFLEAVE_ENDTIME, '%Y-%m-%d %H:%i:%s')                 AS 请假结束时间,
+               DATE_FORMAT(p.ASKFLEAVE_CREATETIME, '%Y-%m-%d %H:%i:%s')              AS 申请时间,
+               (SELECT REALNAME FROM t_user WHERE USER_ID = p.ASKFLEAVE_CREATEUSERID)   请假申请用户,
+               (SELECT REALNAME FROM t_user WHERE USER_ID = p.ASKFLEAVE_CHECKUSERID) AS 请假审批用户,
+               DATE_FORMAT(p.ASKFLEAVE_CHECKTIME, '%Y-%m-%d %H:%i:%s')               AS 审批时间,
+               p.ASKFLEAVE_CHECKREASON                                               AS 请假审批未通过原因,
+               CASE p.ASKFLEAVE_CHECKSTATE
+                   WHEN 0 THEN '待审批'
+                   WHEN 1 THEN '已通过'
+                   WHEN 2 THEN '未通过'
+                   WHEN 3 THEN '审批中'
+                   WHEN 4 THEN '已撤销'
+                   ELSE '未知'
+                   END                                                               AS 请假状态,
+               CASE p.IS_DELETE
+                   WHEN 0 THEN '否'
+                   ELSE '是'
+                   END                                                               AS 是否已删除
+        FROM p_askfleave p
+        WHERE p.ASKFLEAVE_ID = #{id}
+    </select>
+</mapper>

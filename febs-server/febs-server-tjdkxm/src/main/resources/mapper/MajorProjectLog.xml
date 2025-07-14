@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cc.mrbird.febs.server.tjdkxm.mapper.MajorProjectLogMapper">
+
+    <select id="selectPageInfo" resultType="cc.mrbird.febs.common.core.entity.tjdkxm.MajorProjectLog">
+        SELECT
+        p.MAJOR_ID,
+        p.MAJOR_TITLE,
+        p.MAJOR_PROJECTID,
+        ( SELECT PROJECT_NAME FROM p_project b WHERE b.PROJECT_ID = p.MAJOR_PROJECTID ) majorProjectname,
+        p.MAJOR_CONTENT,
+        p.MAJOR_IMG,
+        p.CREATE_USERID,
+        ( SELECT u.REALNAME FROM t_user u WHERE u.USER_ID = p.CREATE_USERID ) createUsername,
+        p.MAJOR_TIME,
+        p.CREATE_TIME,
+        p.IS_DELETE
+        FROM
+        p_majorprojectlog p
+        where 1=1
+        <if test="ew != null">
+            <if test="ew.nonEmptyOfWhere">
+                AND
+            </if>
+            ${ew.sqlSegment}
+        </if>
+
+    </select>
+    <select id="selectInfoById" resultType="com.alibaba.fastjson.JSONObject">
+        SELECT p.MAJOR_ID                                                                AS 重大项目日志ID,
+               p.MAJOR_TITLE                                                             AS 标题,
+               (SELECT PROJECT_NAME FROM p_project WHERE PROJECT_ID = p.MAJOR_PROJECTID) AS 所属项目,
+               p.MAJOR_CONTENT                                                           AS 内容,
+               p.MAJOR_IMG                                                               AS 图片,
+               (SELECT REALNAME FROM t_user WHERE USER_ID = p.CREATE_USERID)             AS 记录人,
+               DATE_FORMAT(p.MAJOR_TIME, '%Y-%m-%d %H:%i:%s')                            AS 发送时间,
+               DATE_FORMAT(p.CREATE_TIME, '%Y-%m-%d %H:%i:%s')                           AS 创建时间,
+               CASE
+                   p.IS_DELETE
+                   WHEN 0 THEN
+                       '否'
+                   ELSE '是'
+                   END                                                                   AS 是否已删除
+        FROM p_majorprojectlog p
+        where p.MAJOR_ID = #{id}
+    </select>
+</mapper>

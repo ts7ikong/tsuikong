@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cc.mrbird.febs.server.tjdkxm.mapper.DangerMapper">
+    <select id="selectPageInfo" resultType="cc.mrbird.febs.common.core.entity.tjdkxm.Danger">
+        SELECT
+        p.DANGER_ID AS DANGER_ID,
+        p.DANGER_PROJECTID AS DANGER_PROJECTID,
+        (SELECT u.PROJECT_NAME FROM p_project u WHERE (u.PROJECT_ID = p.DANGER_PROJECTID)) AS projectName,
+        p.DANGER_UNITENGINEID AS DANGER_UNITENGINEID,
+        (SELECT u.UNIT_NAME FROM p_unitengine u WHERE (u.UNIT_ID = p.DANGER_UNITENGINEID)) AS unitengineName,
+        p.DANGER_PARCELID AS DANGER_PARCELID,
+        (SELECT u.PARCEL_NAME FROM p_parcel u WHERE (u.PARCEL_ID = p.DANGER_PARCELID)) AS parcelName,
+        p.DANGER_SUBITEMID AS DANGER_SUBITEMID,
+        (SELECT u.SUBITEM_NAME FROM p_subitem u WHERE (u.SUBITEM_ID = p.DANGER_SUBITEMID)) AS subitemName,
+        p.DANGER_NAME AS DANGER_NAME,
+        p.DANGER_ADDR AS DANGER_ADDR,
+        p.DANGER_TYPE AS DANGER_TYPE,
+        p.DANGER_LEVEL AS DANGER_LEVEL,
+        p.DANGER_REMARK AS DANGER_REMARK,
+        p.DANGER_RECORDUSERID AS DANGER_RECORDUSERID,
+        (SELECT u.REALNAME FROM t_user u WHERE (u.USER_ID = p.DANGER_RECORDUSERID)) AS dangerRecordusername,
+        p.DANGER_RECORDTIME AS DANGER_RECORDTIME,
+        p.DANGER_RECORDREMARK AS DANGER_RECORDREMARK,
+        p.IS_DELETE AS IS_DELETE
+        FROM p_danger p
+        WHERE 1 = 1
+        <if test="ew != null">
+            <if test="ew.nonEmptyOfWhere">
+                AND
+            </if>
+            ${ew.sqlSegment}
+        </if>
+    </select>
+    <select id="selectInfoById" resultType="com.alibaba.fastjson.JSONObject">
+        SELECT p.DANGER_ID                                                                        AS 重大危险源ID,
+               (SELECT u.PROJECT_NAME FROM p_project u WHERE (u.PROJECT_ID = p.DANGER_PROJECTID)) AS 所属项目,
+               (SELECT u.UNIT_NAME FROM p_unitengine u WHERE (u.UNIT_ID = p.DANGER_UNITENGINEID)) AS 单位项目,
+               (SELECT u.PARCEL_NAME FROM p_parcel u WHERE (u.PARCEL_ID = p.DANGER_PARCELID))     AS 分部名称,
+               (SELECT u.SUBITEM_NAME FROM p_subitem u WHERE (u.SUBITEM_ID = p.DANGER_SUBITEMID)) AS 分项名称,
+               p.DANGER_NAME                                                                      AS 重大危险源名称,
+               p.DANGER_ADDR                                                                      AS 重大危险源位置,
+               p.DANGER_TYPE                                                                      AS 重大危险源类型,
+               p.DANGER_LEVEL                                                                     AS 重大危险源级别,
+               p.DANGER_REMARK                                                                    AS 重大危险源说明,
+               (SELECT u.REALNAME FROM t_user u WHERE (u.USER_ID = p.DANGER_RECORDUSERID))        AS 记录人用户,
+               DATE_FORMAT(p.DANGER_RECORDTIME, '%Y-%m-%d %H:%i:%s')                              AS 记录日期,
+               p.DANGER_RECORDREMARK                                                              AS 记录备注,
+               CASE p.IS_DELETE
+                   WHEN 0 THEN '否'
+                   ELSE '是'
+                   END                                                                            AS 是否已删除
+        FROM p_danger p
+        where p.DANGER_ID = #{id}
+
+    </select>
+</mapper>

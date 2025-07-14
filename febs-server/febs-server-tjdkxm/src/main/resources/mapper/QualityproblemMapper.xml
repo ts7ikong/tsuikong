@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cc.mrbird.febs.server.tjdkxm.mapper.QualityproblemMapper">
+
+    <select id="getCountByUserIdAndProjectId" resultType="java.lang.Integer">
+        SELECT count(1)
+        FROM (
+        SELECT p.QUALITYPROBLEN_ID
+        FROM p_qualityproblem p
+        WHERE
+        p.QUALITYPROBLEN_STATE IN ('1', '3') and p.IS_DELETE=0
+        <if test="projectIds !=null and projectIds.size()>0">
+            and p.QUALITYPROBLEN_PROJECTID in
+            <foreach item="item" collection="projectIds" index="index" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        <if test="userId != null ">
+            AND (p.CREATE_USERID = #{userId} OR p.QUALITYPROBLEN_ACCEPTUSERID=#{userId})
+        </if>
+        UNION
+        SELECT p1.QUALITYPROBLEN_ID
+        FROM p_qualityproblem p1
+        WHERE
+        p1.QUALITYPROBLEN_STATE = '2' and p1.IS_DELETE=0
+        <if test="projectIds !=null and projectIds.size()>0">
+            and p1.QUALITYPROBLEN_PROJECTID in
+            <foreach item="item" collection="projectIds" index="index" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        <if test="userId != null ">
+            AND p1.QUALITYPROBLEN_RECTIFYUSERID = #{userId}
+        </if>
+        ) temp
+    </select>
+    <select id="selectPageInfo" resultType="cc.mrbird.febs.common.core.entity.tjdkxm.Qualityproblem">
+        SELECT p.QUALITYPROBLEN_ID AS QUALITYPROBLEN_ID,
+        p.QUALITYPROBLEN_PROJECTID AS QUALITYPROBLEN_PROJECTID,
+        (
+        SELECT u.PROJECT_NAME
+        FROM p_project u
+        WHERE (u.PROJECT_ID = p.QUALITYPROBLEN_PROJECTID)) AS projectName,
+        (
+        SELECT qp.QUALITYPLAN_CONTENT
+        FROM p_qualityplan qp
+        WHERE (qp.QUALITYPLAN_ID = p.QUALITYPLAN_ID)) AS qualityplanContent,
+        p.QUALITYPROBLEN_UNITENGINEID AS QUALITYPROBLEN_UNITENGINEID,
+        (
+        SELECT u.UNIT_NAME
+        FROM p_unitengine u
+        WHERE (u.UNIT_ID = p.QUALITYPROBLEN_UNITENGINEID)) AS unitengineName,
+        p.QUALITYPROBLEN_PARCELID AS QUALITYPROBLEN_PARCELID,
+        (
+        SELECT u.PARCEL_NAME
+        FROM p_parcel u
+        WHERE (u.PARCEL_ID = p.QUALITYPROBLEN_PARCELID)) AS parcelName,
+        p.QUALITYPROBLEN_SUBITEMID AS QUALITYPROBLEN_SUBITEMID,
+        (
+        SELECT u.SUBITEM_NAME
+        FROM p_subitem u
+        WHERE (u.SUBITEM_ID = p.QUALITYPROBLEN_SUBITEMID)) AS subitemName,
+        p.QUALITYPROBLEN_TYPE AS QUALITYPROBLEN_TYPE,
+        p.QUALITYPROBLEN_LEVEL AS QUALITYPROBLEN_LEVEL,
+        p.QUALITYPROBLEN_STATE AS QUALITYPROBLEN_STATE,
+        p.QUALITYPROBLEN_EXPLAIN AS QUALITYPROBLEN_EXPLAIN,
+        p.QUALITYPROBLEN_IMG AS QUALITYPROBLEN_IMG,
+        p.QUALITYPROBLEN_CHECKUSERID AS QUALITYPROBLEN_CHECKUSERID,
+        group_concat(
+        (SELECT IFNULL(u.REALNAME,'') FROM t_user u WHERE ( u.USER_ID = qu.USER_ID))
+        ) AS qualityproblenCheckusername,
+        p.QUALITYPROBLEN_CHECKFOREIGNUSER AS QUALITYPROBLEN_CHECKFOREIGNUSER,
+        p.QUALITYPROBLEN_CHECKTIME AS QUALITYPROBLEN_CHECKTIME,
+        p.QUALITYPROBLEN_RECTIFYUSERID AS QUALITYPROBLEN_RECTIFYUSERID,
+        (
+        SELECT u.REALNAME
+        FROM t_user u
+        WHERE (u.USER_ID = p.QUALITYPROBLEN_RECTIFYUSERID)) AS qualityproblenRectifyusername,
+        p.QUALITYPROBLEN_RECTIFYTIME AS QUALITYPROBLEN_RECTIFYTIME,
+        p.QUALITYPROBLEN_RECTIFYFOR AS QUALITYPROBLEN_RECTIFYFOR,
+        p.QUALITYPROBLEN_RECTIFYACTIME AS QUALITYPROBLEN_RECTIFYACTIME,
+        p.QUALITYPROBLEN_RECTIFYIMG AS QUALITYPROBLEN_RECTIFYIMG,
+        p.QUALITYPROBLEN_ACCEPTUSERID AS QUALITYPROBLEN_ACCEPTUSERID,
+        (
+        SELECT u.REALNAME
+        FROM t_user u
+        WHERE (u.USER_ID = p.QUALITYPROBLEN_ACCEPTUSERID)) AS qualityproblenAcceptusername,
+        p.QUALITYPROBLEN_ACCEPTTIME AS QUALITYPROBLEN_ACCEPTTIME,
+        p.QUALITYPROBLEN_ACCEPTINFO AS QUALITYPROBLEN_ACCEPTINFO,
+        p.IS_DELETE AS IS_DELETE,
+        p.CREATE_USERID AS CREATE_USERID,
+        p.CREATE_TIME AS CREATE_TIME
+        FROM (
+        p_qualityproblem p
+        LEFT JOIN p_qualityproblem_user qu ON ((
+        qu.TABLE_ID = p.QUALITYPROBLEN_ID
+        )))
+        WHERE 1=1
+        <if test="ew != null">
+            <if test="ew.nonEmptyOfWhere">
+                AND
+            </if>
+            ${ew.sqlSegment}
+        </if>
+    </select>
+    <select id="selectInfoById" resultType="com.alibaba.fastjson.JSONObject">
+        SELECT p.QUALITYPROBLEN_ID                                                                        AS 质量问题ID,
+               (
+                   SELECT u.PROJECT_NAME
+                   FROM p_project u
+                   WHERE (u.PROJECT_ID = p.QUALITYPROBLEN_PROJECTID))                                     AS 所属项目,
+               (
+                   SELECT u.UNIT_NAME
+                   FROM p_unitengine u
+                   WHERE (u.UNIT_ID = p.QUALITYPROBLEN_UNITENGINEID))                                     AS 单位项目,
+               (
+                   SELECT u.PARCEL_NAME
+                   FROM p_parcel u
+                   WHERE (u.PARCEL_ID = p.QUALITYPROBLEN_PARCELID))                                       AS 分部名称,
+               (
+                   SELECT u.SUBITEM_NAME
+                   FROM p_subitem u
+                   WHERE (u.SUBITEM_ID = p.QUALITYPROBLEN_SUBITEMID))                                     AS 分项名称,
+               CASE
+                   p.QUALITYPROBLEN_TYPE
+                   WHEN 1 THEN
+                       '工程质量缺陷'
+                   WHEN 2 THEN
+                       '工程质量通病'
+                   WHEN 3 THEN
+                       '工程质量事故'
+                   END                                                                                    AS 质量问题类型,
+               CASE
+                   p.QUALITYPROBLEN_LEVEL
+                   WHEN 1 THEN
+                       '一般'
+                   WHEN 2 THEN
+                       '较大'
+                   WHEN 3 THEN
+                       '重大'
+                   END                                                                                    AS 质量问题类型,
+               CASE
+                   p.QUALITYPROBLEN_STATE
+                   WHEN 1 THEN
+                       '待分配'
+                   WHEN 2 THEN
+                       '待整改'
+                   WHEN 3 THEN
+                       '待验收'
+                   WHEN 4 THEN
+                       '验收合格'
+                   WHEN 5 THEN
+                       '验收不通过'
+                   END                                                                                    AS 质量问题状态,
+               p.QUALITYPROBLEN_EXPLAIN                                                                   AS 质量问题说明,
+               p.QUALITYPROBLEN_IMG                                                                       AS 问题图片地址,
+               group_concat((SELECT IFNULL(u.REALNAME, '') FROM t_user u WHERE (u.USER_ID = qu.USER_ID))) AS 检查人,
+               p.QUALITYPROBLEN_CHECKFOREIGNUSER                                                          AS 检查人_外来人员,
+               DATE_FORMAT(p.QUALITYPROBLEN_CHECKTIME, '%Y-%m-%d %H:%i:%s')                               AS 检查日期,
+               (
+                   SELECT u.REALNAME
+                   FROM t_user u
+                   WHERE (u.USER_ID = p.QUALITYPROBLEN_RECTIFYUSERID))                                    AS 整改人,
+               DATE_FORMAT(p.QUALITYPROBLEN_RECTIFYTIME, '%Y-%m-%d %H:%i:%s')                             AS 整改期限,
+               p.QUALITYPROBLEN_RECTIFYFOR                                                                AS 整改要求,
+               DATE_FORMAT(p.QUALITYPROBLEN_RECTIFYACTIME, '%Y-%m-%d %H:%i:%s')                           AS 实际整改日期,
+               p.QUALITYPROBLEN_RECTIFYIMG                                                                AS 整改后图片,
+               (
+                   SELECT u.REALNAME
+                   FROM t_user u
+                   WHERE (u.USER_ID = p.QUALITYPROBLEN_ACCEPTUSERID))                                     AS 验收人,
+               p.QUALITYPROBLEN_ACCEPTINFO                                                                AS 验收说明,
+               p.QUALITYPROBLEN_ACCEPTTIME                                                                AS 验收时间,
+               p.CREATE_USERID                                                                            AS 创建人,
+               DATE_FORMAT(p.CREATE_TIME, '%Y-%m-%d %H:%i:%s')                                            AS 创建时间,
+               CASE
+                   p.IS_DELETE
+                   WHEN 0 THEN
+                       '否'
+                   ELSE '是'
+                   END                                                                                    AS 是否已删除
+        FROM (
+              p_qualityproblem p
+                 LEFT JOIN p_qualityproblem_user qu ON ((
+            qu.TABLE_ID = p.QUALITYPROBLEN_ID
+            )))
+        where p.QUALITYPROBLEN_ID = #{id}
+        GROUP BY p.QUALITYPROBLEN_ID
+    </select>
+</mapper>

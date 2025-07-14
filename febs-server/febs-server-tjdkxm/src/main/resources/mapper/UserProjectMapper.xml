@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cc.mrbird.febs.server.tjdkxm.mapper.UserProjectMapper">
+
+    <select id="selectPageInfo" resultType="Map">
+        SELECT
+        userId,
+        username,
+        realname,
+        mobile,
+        deptId,
+        deptName,
+        projectId,
+        projectName
+        FROM
+        (
+        SELECT
+        t.USER_ID userId,
+        t.USERNAME username,
+        t.REALNAME realname,
+        t.MOBILE mobile,
+        t.DEPT_ID deptId,
+        d.DEPT_NAME deptName,
+        IFNULL( temp.PROJECT_ID, - 1 ) projectId,
+        temp.PROJECT_NAME projectName
+        FROM
+        t_user t
+        LEFT JOIN p_dept d ON t.DEPT_ID = d.DEPT_ID
+        AND d.IS_DELETE = 0
+        LEFT JOIN (
+        SELECT
+        up.USER_ID,
+        p.PROJECT_ID,
+        PROJECT_NAME
+        FROM
+        p_project p
+        LEFT JOIN p_userproject up ON p.PROJECT_ID = up.PROJECT_ID
+        WHERE
+        p.IS_DELETE = 0
+        AND up.IS_DELETE = 0
+        AND p.PROJECT_ID = #{projectId}
+        ) temp ON t.USER_ID = temp.USER_ID
+        WHERE
+        t.`STATUS` != 2
+        AND t.LEVEL > 1
+        <if test="ew != null">
+            <if test="ew.nonEmptyOfWhere">
+                AND
+            </if>
+            ${ew.sqlSegment}
+        </if>
+        ) t
+        WHERE
+        t.projectId = #{inProject}
+    </select>
+</mapper>

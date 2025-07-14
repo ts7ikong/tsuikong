@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cc.mrbird.febs.server.tjdkxm.mapper.ZzaqglryrzMapper">
+
+    <select id="selectPageInfo" resultType="cc.mrbird.febs.common.core.entity.tjdkxm.Zzaqglryrz">
+        SELECT
+        p.ZZAQGLRYRZ_ID,
+        p.ZZAQGLRYRZ_PROJECTID,
+        ( SELECT PROJECT_NAME FROM p_project WHERE PROJECT_ID = p.ZZAQGLRYRZ_PROJECTID ) AS projectName,
+        p.ZZAQGLRYRZ_CREATETIME,
+        p.ZZAQGLRYRZ_MANID,
+        ( SELECT REALNAME FROM t_user WHERE USER_ID = p.ZZAQGLRYRZ_MANID ) AS zzaqglryrzMan,
+        p.ZZAQGLRYRZ_CASE,
+        p.ZZAQGLRYRZ_WXZYNR,
+        p.ZZAQGLRYRZ_AQJYJDQK,
+        p.ZZAQGLRYRZ_AQHDQK,
+        p.ZZAQGLRYRZ_AQXSJCQK,
+        p.ZZAQGLRYRZ_JJSGCSSSQK,
+        p.ZZAQGLRYRZ_JLTZAQJCQK,
+        p.ZZAQGLRYRZ_TGJBQK,
+        p.ZZAQGLRYRZ_QTSGSX,
+        p.ZZAQGLRYRZ_ZGQW,
+        p.ZZAQGLRYRZ_ZDQW,
+        p.ZZAQGLRYRZ_QH,
+        p.IS_DELETE,
+        p.fjUrl
+        FROM
+        p_zzaqglryrz p
+        where 1=1
+        <if test="ew != null">
+            <if test="ew.nonEmptyOfWhere">
+                AND
+            </if>
+            ${ew.sqlSegment}
+        </if>
+    </select>
+    <select id="selectInfoById" resultType="com.alibaba.fastjson.JSONObject">
+        SELECT p.ZZAQGLRYRZ_ID                                           AS 专职安全管理人员日志ID,
+               (
+                   SELECT u.PROJECT_NAME
+                   FROM p_project u
+                   WHERE (u.PROJECT_ID = p.ZZAQGLRYRZ_PROJECTID))        AS 所属项目,
+               DATE_FORMAT(p.ZZAQGLRYRZ_CREATETIME, '%Y-%m-%d %H:%i:%s') AS 记录时间,
+               (
+                   SELECT u.REALNAME
+                   FROM t_user u
+                   WHERE (u.USER_ID = p.ZZAQGLRYRZ_MANID))               AS 记录人,
+               p.ZZAQGLRYRZ_CASE                                         AS 工程施工部位及进展情况,
+               p.ZZAQGLRYRZ_WXZYNR                                       AS 当日主要危险性项目作业内容,
+               p.ZZAQGLRYRZ_AQJYJDQK                                     AS 施工项目安全教育与安全交底情况,
+               p.ZZAQGLRYRZ_AQHDQK                                       AS 施工作业队伍班前施工安全活动情况,
+               p.ZZAQGLRYRZ_AQXSJCQK                                     AS 现场施工安全巡视与检查情况,
+               p.ZZAQGLRYRZ_JJSGCSSSQK                                   AS 季节施工防寒_防暑等措施实施情况,
+               p.ZZAQGLRYRZ_JLTZAQJCQK                                   AS 监理通知或有关部门安全检查情况,
+               p.ZZAQGLRYRZ_TGJBQK                                       AS 停工_加班情况,
+               p.ZZAQGLRYRZ_QTSGSX                                       AS 其他应记录的安全与文明施工事项,
+               p.ZZAQGLRYRZ_ZGQW                                         AS 最高气温,
+               p.ZZAQGLRYRZ_ZDQW                                         AS 最低气温,
+               p.fjUrl                                                   AS 附件
+               CASE
+                   p.ZZAQGLRYRZ_QH
+                   WHEN 1 THEN
+                       '晴'
+                   WHEN 2 THEN
+                       '阴'
+                   WHEN 3 THEN
+                       '雨'
+                   WHEN 4 THEN
+                       '雪'
+                   END                                                   AS 气候,
+               CASE
+                   p.IS_DELETE
+                   WHEN 0 THEN
+                       '否'
+                   ELSE '是'
+                   END                                                   AS 是否已删除
+        FROM p_zzaqglryrz p
+        where p.ZZAQGLRYRZ_ID = #{id}
+    </select>
+</mapper>

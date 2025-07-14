@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cc.mrbird.febs.server.tjdkxm.mapper.BiddRecordMapper">
+
+    <select id="selectPageInfo" resultType="cc.mrbird.febs.common.core.entity.tjdkxm.BiddRecord">
+        SELECT
+        p.BIDDRECORD_ID,
+        p.BIDDRECORD_CODE,
+        p.BIDDRECORD_PROJECTNAME,
+        p.BIDDRECORD_BIDDID,
+        ( SELECT BIDD_UNIT FROM p_bidd b WHERE b.BIDD_ID = p.BIDDRECORD_BIDDID ) biddrecordBiddUnit,
+        p.BIDDRECORD_PROJECTMANAGER,
+        p.BIDDRECORD_PROJECTMANAGER AS biddrecordProjectmanagerName,
+        p.BIDDRECORD_AMOUNT,
+        p.BIDDRECORD_TIME,
+        p.BIDDRECORD_PROVINCE,
+        p.BIDDRECORD_WORKLOAD,
+        p.BIDDRECORD_PROJECTINFO,
+        p.BIDDRECORD_ISINFO,
+        p.BIDDRECORD_INFO,
+        p.BIDDRECORD_CONTRACTTIME,
+        p.BIDDRECORD_ISCONTRACTINFO,
+        p.BIDDRECORD_CONTRACTINFO,
+        p.BIDDRECORD_COMPLETIONINFO,
+        p.BIDDRECORD_ISACCEPTANCEINFO,
+        p.BIDDRECORD_ACCEPTANCEINFO,
+        p.BIDDRECORD_ACCEPTANCETIME,
+        p.CREATE_USERID,
+        ( SELECT u.REALNAME FROM t_user u WHERE u.USER_ID = p.CREATE_USERID ) createUserName,
+        p.CREATE_TIME,
+        p.IS_DELETE
+        FROM
+        p_biddrecord p
+        where 1=1
+        <if test="ew != null">
+            <if test="ew.nonEmptyOfWhere">
+                AND
+            </if>
+            ${ew.sqlSegment}
+        </if>
+
+    </select>
+    <select id="selectInfoById" resultType="com.alibaba.fastjson.JSONObject">
+        SELECT p.BIDDRECORD_CODE                                                                         AS 编号,
+               p.BIDDRECORD_PROJECTNAME                                                                  AS 所属项目,
+               (SELECT BIDD_UNIT FROM p_bidd b WHERE b.BIDD_ID = p.BIDDRECORD_BIDDID)                    AS 对应招投文件,
+               group_concat((SELECT IFNULL(u.REALNAME, '') FROM t_user u WHERE (u.USER_ID = b.USER_ID))) AS 项目经理,
+               p.BIDDRECORD_AMOUNT                                                                       AS 中标金额_万元,
+               DATE_FORMAT(p.BIDDRECORD_TIME, '%Y-%m-%d %H:%i:%s')                                       AS 中标时间,
+               p.BIDDRECORD_PROVINCE                                                                     AS 省份,
+               p.BIDDRECORD_WORKLOAD                                                                     AS 项目主要工作内容,
+               p.BIDDRECORD_PROJECTINFO                                                                  AS 项目资料,
+               p.BIDDRECORD_INFO                                                                         AS 中标通知书,
+               DATE_FORMAT(p.BIDDRECORD_CONTRACTTIME, '%Y-%m-%d %H:%i:%s')                               AS 合同时间,
+               p.BIDDRECORD_CONTRACTINFO                                                                 AS 合同资料,
+               p.BIDDRECORD_COMPLETIONINFO                                                               AS 竣工资料,
+               p.BIDDRECORD_ACCEPTANCEINFO                                                               AS 验收资料,
+               DATE_FORMAT(p.BIDDRECORD_ACCEPTANCETIME, '%Y-%m-%d %H:%i:%s')                             AS 验收时间,
+               (SELECT u.REALNAME FROM t_user u WHERE u.USER_ID = p.CREATE_USERID)                       AS 创建人员,
+               DATE_FORMAT(p.CREATE_TIME, '%Y-%m-%d %H:%i:%s')                                           AS 创建时间,
+               CASE
+                   p.IS_DELETE
+                   WHEN 0 THEN
+                       '否'
+                   ELSE '是'
+                   END                                                                                   AS 是否已删除
+        FROM p_biddrecord p
+                 LEFT JOIN p_biddrecord_user b ON p.BIDDRECORD_ID = b.TABLE_ID
+        where p.BIDDRECORD_ID = #{id}
+        GROUP BY p.BIDDRECORD_ID
+    </select>
+</mapper>

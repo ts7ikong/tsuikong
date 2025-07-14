@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cc.mrbird.febs.server.tjdkxm.mapper.QualityplanMapper">
+
+    <select id="getAcceptanceCount" resultType="java.lang.Integer">
+        SELECT
+        count( 1 )
+        FROM
+        p_qualityplan
+        WHERE
+        QUALITYPLAN_ID IN (
+        SELECT
+        p1.QUALITYPLAN_ID
+        FROM
+        p_qualityplan p1
+        WHERE 1=1
+        <if test="projectIds !=null and projectIds.size()>0">
+            and p1.QUALITYPLAN_PROJECTID in
+            <foreach item="item" collection="projectIds" index="index" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        AND p1.QUALITYPLAN_CHECKSTATE IN ( '0', '1' )
+        AND p1.IS_DELETE = 0
+        <if test="userId != null">
+            AND p1.QUALITYPLAN_MAKERUSERID = #{userId}
+        </if>
+        UNION
+        (
+        SELECT
+        p2.QUALITYPLAN_ID
+        FROM
+        p_qualityplan p2
+        WHERE
+        p2.QUALITYPLAN_CHECKSTATE = '0'
+        <if test="projectIds !=null and projectIds.size()>0">
+            and p2.QUALITYPLAN_PROJECTID in
+            <foreach item="item" collection="projectIds" index="index" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        <if test="userId != null">
+            and p2.QUALITYPLAN_ID IN (
+            SELECT DISTINCT TABLE_ID from p_qualityplan_user where USER_ID=#{userId}
+            )
+        </if>
+        )
+        )
+        <if test="ew != null">
+            <if test="ew.nonEmptyOfWhere">
+                AND
+            </if>
+            ${ew.sqlSegment}
+        </if>
+    </select>
+    <select id="notChecked" resultType="java.lang.Integer">
+        SELECT
+        count( 1 )
+        FROM
+        (
+        SELECT
+        p.QUALITYPLAN_ID
+        FROM
+        p_qualityplan p
+        WHERE
+        p.IS_DELETE = 0
+        <if test="projectIds !=null and projectIds.size()>0">
+            and p.QUALITYPLAN_PROJECTID in
+            <foreach item="item" collection="projectIds" index="index" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        AND p.QUALITYPLAN_CHECKSTATE = '0'
+        <if test="userId != null">
+            AND (
+            p.QUALITYPLAN_ID IN (
+            SELECT TABLE_ID from p_qualityplan_user where USER_ID=#{userId})
+            )
+        </if>
+        UNION
+        (
+        SELECT
+        p1.QUALITYPLAN_ID
+        FROM
+        p_qualityplan p1
+        WHERE
+        p1.IS_DELETE = 0
+        <if test="projectIds !=null and projectIds.size()>0">
+            and p1.QUALITYPLAN_PROJECTID in
+            <foreach item="item" collection="projectIds" index="index" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        AND p1.QUALITYPLAN_CHECKSTATE = '1'
+        <if test="userId != null">
+            AND p1.QUALITYPLAN_ACCEPTANCEUSERID = #{userId}
+        </if>
+        )) temp;
+    </select>
+    <select id="selectPageInfo" resultType="cc.mrbird.febs.common.core.entity.tjdkxm.Qualityplan">
+        SELECT p.QUALITYPLAN_ID AS QUALITYPLAN_ID,
+        p.QUALITYPLAN_PROJECTID AS QUALITYPLAN_PROJECTID,
+        (
+        SELECT u.PROJECT_NAME
+        FROM p_project u
+        WHERE (u.PROJECT_ID = p.QUALITYPLAN_PROJECTID)) AS projectName,
+        p.QUALITYPLAN_UNITENGINEID AS QUALITYPLAN_UNITENGINEID,
+        (
+        SELECT u.UNIT_NAME
+        FROM p_unitengine u
+        WHERE (u.UNIT_ID = p.QUALITYPLAN_UNITENGINEID)) AS unitengineName,
+        p.QUALITYPLAN_PARCELID AS QUALITYPLAN_PARCELID,
+        (
+        SELECT u.PARCEL_NAME
+        FROM p_parcel u
+        WHERE (u.PARCEL_ID = p.QUALITYPLAN_PARCELID)) AS parcelName,
+        p.QUALITYPLAN_SUBITEMID AS QUALITYPLAN_SUBITEMID,
+        (
+        SELECT u.SUBITEM_NAME
+        FROM p_subitem u
+        WHERE (u.SUBITEM_ID = p.QUALITYPLAN_SUBITEMID)) AS subitemName,
+        p.QUALITYPLAN_CHECKTIME AS QUALITYPLAN_CHECKTIME,
+        p.QUALITYPLAN_CHECKTYPE AS QUALITYPLAN_CHECKTYPE,
+        p.QUALITYPLAN_CONTENT AS QUALITYPLAN_CONTENT,
+        p.QUALITYPLAN_CHECKUSERID AS QUALITYPLAN_CHECKUSERID,
+        group_concat(
+        (SELECT IFNULL(u.REALNAME,'') FROM t_user u WHERE ( u.USER_ID = qu.USER_ID))
+        ) AS qualityplanCheckusername,
+        group_concat(
+        (SELECT IFNULL(u.REALNAME,'') FROM t_user u WHERE ( u.USER_ID = p.QUALITYPLAN_LOCALUSERID))
+        ) AS qualityplanLocalusername,
+        p.QUALITYPLAN_CHECKIMG AS QUALITYPLAN_CHECKIMG,
+        p.QUALITYPLAN_ACTUALTIME AS QUALITYPLAN_ACTUALTIME,
+        p.QUALITYPLAN_CHECKFILE AS QUALITYPLAN_CHECKFILE,
+        p.QUALITYPLAN_CHECKFOREIGNUSER AS QUALITYPLAN_CHECKFOREIGNUSER,
+        p.QUALITYPLAN_CHECKSTATE AS QUALITYPLAN_CHECKSTATE,
+        p.QUALITYPLAN_REMARK AS QUALITYPLAN_REMARK,
+        p.QUALITYPLAN_MAKERUSERID AS QUALITYPLAN_MAKERUSERID,
+        (
+        SELECT u.REALNAME
+        FROM t_user u
+        WHERE (u.USER_ID = p.QUALITYPLAN_MAKERUSERID)) AS qualityplanMakerusername,
+        p.QUALITYPLAN_ACCEPTANCEUSERID AS QUALITYPLAN_ACCEPTANCEUSERID,
+        (
+        SELECT u.REALNAME
+        FROM t_user u
+        WHERE (u.USER_ID = p.QUALITYPLAN_ACCEPTANCEUSERID)) AS qualityplanAcceptanceusername,
+        p.QUALITYPLAN_MAKERTIME AS QUALITYPLAN_MAKERTIME,
+        p.IS_DELETE AS IS_DELETE,
+        p.QUALITYPLAN_CHECKREMARK AS QUALITYPLAN_CHECKREMARK,
+        p.QUALITYPLAN_ACCEPTINFO AS QUALITYPLAN_ACCEPTINFO,
+        p.QUALITYPLAN_ACCEPTIME AS QUALITYPLAN_ACCEPTIME,
+        p.QUALITYPLAN_CHECKPICTURES AS QUALITYPLAN_CHECKPICTURES,
+        p.QUALITYPLAN_ISLOCAL as QUALITYPLAN_ISLOCAL,
+        p.QUALITYPLAN_LOCALTIME as QUALITYPLAN_LOCALTIME,
+        p.QUALITYPLAN_LOCALINFO as QUALITYPLAN_LOCALINFO,
+        p.QUALITYPLAN_LOCALIMG as QUALITYPLAN_LOCALIMG
+        FROM (
+        p_qualityplan p
+        LEFT JOIN p_qualityplan_user qu ON ((
+        qu.TABLE_ID = p.QUALITYPLAN_ID
+        )))
+        WHERE 1 = 1
+        <if test="ew != null">
+            <if test="ew.nonEmptyOfWhere">
+                AND
+            </if>
+            ${ew.sqlSegment}
+        </if>
+
+    </select>
+    <select id="selectInfoById" resultType="com.alibaba.fastjson.JSONObject">
+        SELECT p.QUALITYPLAN_ID                                           AS 质量检查计划,
+               (
+                   SELECT u.PROJECT_NAME
+                   FROM p_project u
+                   WHERE (u.PROJECT_ID = p.QUALITYPLAN_PROJECTID))        AS 所属项目,
+               (
+                   SELECT u.UNIT_NAME
+                   FROM p_unitengine u
+                   WHERE (u.UNIT_ID = p.QUALITYPLAN_UNITENGINEID))        AS 单位项目,
+               (
+                   SELECT u.PARCEL_NAME
+                   FROM p_parcel u
+                   WHERE (u.PARCEL_ID = p.QUALITYPLAN_PARCELID))          AS 分部名称,
+               (
+                   SELECT u.SUBITEM_NAME
+                   FROM p_subitem u
+                   WHERE (u.SUBITEM_ID = p.QUALITYPLAN_SUBITEMID))        AS 分项名称,
+               DATE_FORMAT(p.QUALITYPLAN_CHECKTIME, '%Y-%m-%d %H:%i:%s')  AS 计划检查日期,
+               CASE
+                   p.QUALITYPLAN_CHECKTYPE
+                   WHEN 1 THEN
+                       '生产检查'
+                   WHEN 2 THEN
+                       '验收检查'
+                   WHEN 3 THEN
+                       '监督检查'
+                   WHEN 4 THEN
+                       '验证检查'
+                   END                                                    AS 检查类型,
+               p.QUALITYPLAN_CONTENT                                      AS 检查内容,
+               p.QUALITYPLAN_CHECKPICTURES                                AS 检查现场图片,
+               p.QUALITYPLAN_CHECKREMARK                                  AS 检查备注,
+               group_concat((
+                   SELECT IFNULL(u.REALNAME, '')
+                   FROM t_user u
+                   WHERE (u.USER_ID = qu.USER_ID)))                       AS 检查人用户,
+               p.QUALITYPLAN_CHECKIMG                                     AS 检查实施图片,
+               DATE_FORMAT(p.QUALITYPLAN_ACTUALTIME, '%Y-%m-%d %H:%i:%s') AS 实际检查时间,
+               p.QUALITYPLAN_CHECKFILE                                    AS 检查实施文件,
+               p.QUALITYPLAN_CHECKFOREIGNUSER                             AS 检查人_外来人员,
+               CASE
+                   p.QUALITYPLAN_CHECKTYPE
+                   WHEN 1 THEN
+                       '已检查'
+                   ELSE '未检查'
+                   END                                                    AS 检查状态,
+               p.QUALITYPLAN_REMARK                                       AS 备注,
+               (
+                   SELECT u.REALNAME
+                   FROM t_user u
+                   WHERE (u.USER_ID = p.QUALITYPLAN_MAKERUSERID))         AS 制定人用户,
+               DATE_FORMAT(p.QUALITYPLAN_MAKERTIME, '%Y-%m-%d %H:%i:%s')  AS 制定日期,
+               p.QUALITYPLAN_ACCEPTINFO                                   AS 验收说明,
+               DATE_FORMAT(p.QUALITYPLAN_ACCEPTIME, '%Y-%m-%d %H:%i:%s')  AS 验收时间,
+               CASE
+                   p.IS_DELETE
+                   WHEN 0
+                       THEN
+                       '否'
+                   ELSE '是'
+                   END                                                    AS 是否已删除
+        FROM (
+              p_qualityplan p
+                 LEFT JOIN p_qualityplan_user qu ON ((
+            qu.TABLE_ID = p.QUALITYPLAN_ID
+            )))
+        where p.QUALITYPLAN_ID = #{id}
+        GROUP BY p.QUALITYPLAN_ID
+    </select>
+</mapper>

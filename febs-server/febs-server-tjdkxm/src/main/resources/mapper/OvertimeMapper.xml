@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cc.mrbird.febs.server.tjdkxm.mapper.OvertimeMapper">
+
+    <select id="selectPageInfo" resultType="cc.mrbird.febs.common.core.entity.tjdkxm.Overtime">
+        SELECT
+        p.OVERTIME_ID,
+        p.OVERTIME_PROJECTID,
+        ( SELECT PROJECT_NAME FROM p_project WHERE PROJECT_ID = p.OVERTIME_PROJECTID ) AS projectName,
+        p.OVERTIME_CAUSE,
+        p.OVERTIME_DURATION,
+        p.OVERTIME_CREATETIME,
+        p.OVERTIME_CREATEUSERID,
+        ( SELECT REALNAME FROM t_user WHERE USER_ID = p.OVERTIME_CREATEUSERID ) AS overtimeCreateusername,
+        p.OVERTIME_CHECKUSERID,
+        ( SELECT REALNAME FROM t_user WHERE USER_ID = p.OVERTIME_CHECKUSERID ) AS overtimeCheckusername,
+        p.OVERTIME_CHECKTIME,
+        p.OVERTIME_CHECKSTATE,
+        p.OVERTIME_CHECKREASON,
+        p.IS_DELETE
+        FROM
+        p_overtime p
+        where 1=1
+        <if test="ew != null">
+            <if test="ew.nonEmptyOfWhere">
+                AND
+            </if>
+            ${ew.sqlSegment}
+        </if>
+    </select>
+    <select id="selectInfoById" resultType="com.alibaba.fastjson.JSONObject">
+        SELECT p.OVERTIME_ID                                                         AS 加班申请审批ID,
+               p.OVERTIME_CAUSE                                                      AS 加班原因,
+               p.OVERTIME_DURATION                                                   AS 加班时长_小时,
+               DATE_FORMAT(p.OVERTIME_CREATETIME, '%Y-%m-%d %H:%i:%s')               AS 申请时间,
+               (SELECT REALNAME FROM t_user WHERE USER_ID = p.OVERTIME_CREATEUSERID) AS 申请人用户,
+               (SELECT REALNAME FROM t_user WHERE USER_ID = p.OVERTIME_CHECKUSERID)  AS 审批人用户,
+               DATE_FORMAT(p.OVERTIME_CHECKTIME, '%Y-%m-%d %H:%i:%s')                AS 审批时间,
+               CASE p.OVERTIME_CHECKSTATE
+                   WHEN 0 THEN '未审批'
+                   WHEN 1 THEN '已通过'
+                   ELSE '未通过'
+                   END                                                               AS 审批状态,
+               p.OVERTIME_CHECKREASON                                                AS 审批未通过原因,
+               CASE p.IS_DELETE
+                   WHEN 0 THEN '否'
+                   ELSE '是'
+                   END                                                               AS 是否已删除
+        FROM p_overtime p
+        where p.OVERTIME_ID = #{id}
+    </select>
+</mapper>

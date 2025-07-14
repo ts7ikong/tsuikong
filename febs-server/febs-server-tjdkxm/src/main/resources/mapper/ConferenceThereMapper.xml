@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cc.mrbird.febs.server.tjdkxm.mapper.ConferenceThereMapper">
+
+    <select id="selectPageInfo" resultType="cc.mrbird.febs.common.core.entity.tjdkxm.ConferenceThere">
+        SELECT
+        p.CONFERENCE_ID,
+        p.CONFERENCE_THEME,
+        p.CONFERENCE_DATE,
+        p.CONFERENCE_PLACE,
+        p.CONFERENCE_ATTENDE,
+        p.CONFERENCE_ATTENDE AS conferenceAttendeName,
+        p.CONFERENCE_MINUTE,
+        ( SELECT u.REALNAME FROM t_user u WHERE u.USER_ID = p.CONFERENCE_CREATEID ) AS conferencePerson,
+        p.CONFERENCE_ANNX,
+        p.CONFERENCE_CREATETIME,
+        p.CONFERENCE_CREATEID,
+        p.IS_DELETE
+        FROM
+        p_conferencethree p
+        where 1=1
+        <if test="ew != null">
+            <if test="ew.nonEmptyOfWhere">
+                AND
+            </if>
+            ${ew.sqlSegment}
+        </if>
+    </select>
+    <select id="selectInfoById" resultType="com.alibaba.fastjson.JSONObject">
+        SELECT p.CONFERENCE_ID                                                           AS 会议ID,
+               p.CONFERENCE_THEME                                                        AS 会议主题,
+               DATE_FORMAT(p.CONFERENCE_DATE, '%Y-%m-%d %H:%i:%s')                       AS 会议日期,
+               p.CONFERENCE_PLACE                                                        AS 会议地点,
+               p.CONFERENCE_ATTENDE                                                      AS 出席对象,
+               p.CONFERENCE_MINUTE                                                       AS 会议纪要,
+               (SELECT u.REALNAME FROM t_user u WHERE u.USER_ID = p.CONFERENCE_CREATEID) AS 创建人,
+               p.CONFERENCE_ANNX                                                         AS 附件,
+               DATE_FORMAT(p.CONFERENCE_CREATETIME, '%Y-%m-%d %H:%i:%s')                 AS 创建时间,
+               CASE p.IS_DELETE
+                   WHEN 0 THEN '否'
+                   ELSE '是'
+                   END                                                                   AS 是否已删除
+        FROM p_conferencethree p
+        where p.CONFERENCE_ID = #{id}
+    </select>
+</mapper>

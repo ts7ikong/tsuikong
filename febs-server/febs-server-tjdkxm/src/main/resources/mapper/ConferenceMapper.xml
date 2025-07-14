@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cc.mrbird.febs.server.tjdkxm.mapper.ConferenceMapper">
+
+    <select id="selectPageInfo" resultType="cc.mrbird.febs.common.core.entity.tjdkxm.Conference">
+        SELECT p.CONFERENCE_ID AS CONFERENCE_ID,
+        p.CONFERENCE_PROJECTID AS CONFERENCE_PROJECTID,
+        p.CONFERENCE_THEME AS CONFERENCE_THEME,
+        p.CONFERENCE_TIME AS CONFERENCE_TIME,
+        p.CONFERENCE_SITE AS CONFERENCE_SITE,
+        p.CONFERENCE_USERIDS AS CONFERENCE_USERIDS,
+        p.CONFERENCE_CREATEUSERID AS CONFERENCE_CREATEUSERID,
+        (
+        SELECT u.REALNAME
+        FROM t_user u
+        WHERE (u.USER_ID = p.CONFERENCE_CREATEUSERID)) AS conferenceCreateusername,
+        p.CONFERENCE_TYPE AS CONFERENCE_TYPE,
+        p.IS_DELETE AS IS_DELETE,
+        cu.USER_ID AS USER_ID,
+        group_concat(
+        (SELECT IFNULL(u.REALNAME,'') FROM t_user u WHERE ( u.USER_ID = cu.USER_ID))
+        ) AS conferenceUserName
+        FROM (
+        p_conference p
+        LEFT JOIN p_conference_user cu ON ((
+        cu.TABLE_ID = p.CONFERENCE_ID
+        )))
+        where 1=1
+        <if test="ew != null">
+            <if test="ew.nonEmptyOfWhere">
+                AND
+            </if>
+            ${ew.sqlSegment}
+        </if>
+
+    </select>
+    <select id="selectInfoById" resultType="com.alibaba.fastjson.JSONObject">
+        SELECT p.CONFERENCE_ID                                                                            AS 会议表ID,
+               p.CONFERENCE_THEME                                                                         AS 会议主题,
+               DATE_FORMAT(p.CONFERENCE_TIME, '%Y-%m-%d %H:%i:%s')                                        AS 会议时间,
+               p.CONFERENCE_SITE                                                                          AS 会议地点,
+               group_concat((SELECT IFNULL(u.REALNAME, '') FROM t_user u WHERE (u.USER_ID = cu.USER_ID))) AS 参与会议用户,
+               (SELECT u.REALNAME FROM t_user u WHERE u.USER_ID = p.CONFERENCE_CREATEUSERID)              AS 会议发起人,
+               CASE p.CONFERENCE_TYPE
+                   WHEN 0 THEN '待开始'
+                   WHEN 1 THEN '进行中'
+                   WHEN 2 THEN '已结束'
+                   WHEN 3 THEN '已过期'
+                   END                                                                                    AS 会议状态,
+               CASE p.IS_DELETE
+                   WHEN 0 THEN '否'
+                   ELSE '是'
+                   END                                                                                    AS 是否已删除
+        FROM p_conference p
+                 LEFT JOIN p_conference_user cu ON cu.TABLE_ID = p.CONFERENCE_ID
+        where p.CONFERENCE_ID = #{id}
+        GROUP BY p.CONFERENCE_ID
+    </select>
+</mapper>

@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cc.mrbird.febs.server.tjdkxm.mapper.SafeproblemMapper">
+
+    <select id="getCountByUserIdAndProjectId" resultType="java.lang.Integer">
+        SELECT
+        count( 1 )
+        FROM
+        (
+        SELECT
+        p.SAFEPROBLEN_ID
+        FROM
+        p_safeproblem p
+        WHERE
+        p.IS_DELETE = 0
+        <if test="projectIds !=null and projectIds.size()>0">
+            and p.SAFEPROBLEN_PROJECTID in
+            <foreach item="item" collection="projectIds" index="index" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        AND p.SAFEPROBLEN_STATE IN ( '1', '3' )
+        <if test="userId != null ">
+            AND (p.CREATE_USERID = #{userId} OR p.SAFEPROBLEN_ACCEPTUSERID=#{userId})
+        </if>
+        UNION
+        SELECT
+        p1.SAFEPROBLEN_ID
+        FROM
+        p_safeproblem p1
+        WHERE
+        p1.IS_DELETE = 0
+        AND p1.SAFEPROBLEN_STATE = '2'
+        <if test="projectIds !=null and projectIds.size()>0">
+            and p1.SAFEPROBLEN_PROJECTID in
+            <foreach item="item" collection="projectIds" index="index" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        <if test="userId != null ">
+            AND p1.SAFEPROBLEN_RECTIFYUSERID = #{userId}
+        </if>
+        ) temp
+    </select>
+    <select id="selectPageInfo" resultType="cc.mrbird.febs.common.core.entity.tjdkxm.Safeproblem">
+        SELECT p.SAFEPROBLEN_ID AS SAFEPROBLEN_ID,
+        p.SAFEPROBLEN_CODE AS SAFEPROBLEN_CODE,
+        p.SAFEPROBLEN_PROJECTID AS SAFEPROBLEN_PROJECTID,
+        (
+        SELECT u.PROJECT_NAME
+        FROM p_project u
+        WHERE (u.PROJECT_ID = p.SAFEPROBLEN_PROJECTID)) AS projectName,
+        (
+        SELECT sf.SAFEPLAN_CONTENT
+        FROM p_safeplan sf
+        WHERE (sf.SAFEPLAN_ID = p.SAFEPLAN_ID)) AS safeplanContent,
+        p.SAFEPROBLEN_UNITENGINEID AS SAFEPROBLEN_UNITENGINEID,
+        (
+        SELECT u.UNIT_NAME
+        FROM p_unitengine u
+        WHERE (u.UNIT_ID = p.SAFEPROBLEN_UNITENGINEID)) AS unitengineName,
+        p.SAFEPROBLEN_PARCELID AS SAFEPROBLEN_PARCELID,
+        (
+        SELECT u.PARCEL_NAME
+        FROM p_parcel u
+        WHERE (u.PARCEL_ID = p.SAFEPROBLEN_PARCELID)) AS parcelName,
+        p.SAFEPROBLEN_SUBITEMID AS SAFEPROBLEN_SUBITEMID,
+        (
+        SELECT u.SUBITEM_NAME
+        FROM p_subitem u
+        WHERE (u.SUBITEM_ID = p.SAFEPROBLEN_SUBITEMID)) AS subitemName,
+        p.SAFEPROBLEN_TYPE AS SAFEPROBLEN_TYPE,
+        p.SAFEPROBLEN_LEVEL AS SAFEPROBLEN_LEVEL,
+        p.SAFEPROBLEN_EXPLAIN AS SAFEPROBLEN_EXPLAIN,
+        p.SAFEPROBLEN_IMG AS SAFEPROBLEN_IMG,
+        p.SAFEPROBLEN_CHECKUSERID AS SAFEPROBLEN_CHECKUSERID,
+        group_concat(
+        (SELECT IFNULL(u.REALNAME,'') FROM t_user u WHERE ( u.USER_ID = qu.USER_ID))
+        ) AS safeproblenCheckusername,
+        p.SAFEPROBLEN_CHECKFOREIGNUSER AS SAFEPROBLEN_CHECKFOREIGNUSER,
+        p.SAFEPROBLEN_CHECKTIME AS SAFEPROBLEN_CHECKTIME,
+        p.SAFEPROBLEN_RECTIFYUSERID AS SAFEPROBLEN_RECTIFYUSERID,
+        (
+        SELECT u.REALNAME
+        FROM t_user u
+        WHERE (u.USER_ID = p.SAFEPROBLEN_RECTIFYUSERID)) AS safeproblenRectifyusername,
+        p.SAFEPROBLEN_RECTIFYTIME AS SAFEPROBLEN_RECTIFYTIME,
+        p.SAFEPROBLEN_RECTIFYFOR AS SAFEPROBLEN_RECTIFYFOR,
+        p.SAFEPROBLEN_RECTIFYACTIME AS SAFEPROBLEN_RECTIFYACTIME,
+        p.SAFEPROBLEN_RECTIFYIMG AS SAFEPROBLEN_RECTIFYIMG,
+        p.SAFEPROBLEN_STATE AS SAFEPROBLEN_STATE,
+        p.SAFEPROBLEN_ACCEPTUSERID AS SAFEPROBLEN_ACCEPTUSERID,
+        (
+        SELECT u.REALNAME
+        FROM t_user u
+        WHERE (u.USER_ID = p.SAFEPROBLEN_ACCEPTUSERID)) AS safeproblenAcceptusername,
+        p.SAFEPROBLEN_ACCEPTTIME AS SAFEPROBLEN_ACCEPTTIME,
+        p.SAFEPROBLEN_ACCEPTINFO AS SAFEPROBLEN_ACCEPTINFO,
+        p.IS_DELETE AS IS_DELETE,
+        p.CREATE_USERID AS CREATE_USERID,
+        p.CREATE_TIME AS CREATE_TIME
+        FROM (
+        p_safeproblem p
+        LEFT JOIN p_safeproblem_user qu ON ((
+        qu.TABLE_ID = p.SAFEPROBLEN_ID
+        )))
+        WHERE 1=1
+        <if test="ew != null">
+            <if test="ew.nonEmptyOfWhere">
+                AND
+            </if>
+            ${ew.sqlSegment}
+        </if>
+
+    </select>
+    <select id="selectInfoById" resultType="com.alibaba.fastjson.JSONObject">
+        SELECT p.SAFEPROBLEN_ID                                              AS 安全隐患ID,
+               p.SAFEPROBLEN_CODE                                            AS 安全隐患编号,
+               (
+                   SELECT u.PROJECT_NAME
+                   FROM p_project u
+                   WHERE (u.PROJECT_ID = p.SAFEPROBLEN_PROJECTID))           AS 所属项目,
+               (
+                   SELECT u.UNIT_NAME
+                   FROM p_unitengine u
+                   WHERE (u.UNIT_ID = p.SAFEPROBLEN_UNITENGINEID))           AS 单位项目,
+               (
+                   SELECT u.PARCEL_NAME
+                   FROM p_parcel u
+                   WHERE (u.PARCEL_ID = p.SAFEPROBLEN_PARCELID))             AS 分部名称,
+               (
+                   SELECT u.SUBITEM_NAME
+                   FROM p_subitem u
+                   WHERE (u.SUBITEM_ID = p.SAFEPROBLEN_SUBITEMID))           AS 分项名称,
+               CASE
+                   p.SAFEPROBLEN_TYPE
+                   WHEN 1 THEN
+                       '人的不安全行为'
+                   WHEN 2 THEN
+                       '物的不安全状态'
+                   WHEN 3 THEN
+                       '环境的不安全条件'
+                   WHEN 4 THEN
+                       '管理缺陷'
+                   END                                                       AS 安全隐患类型,
+               CASE
+                   p.SAFEPROBLEN_LEVEL
+                   WHEN 1 THEN
+                       '一般'
+                   WHEN 2 THEN
+                       '较大'
+                   WHEN 3 THEN
+                       '重大'
+                   END                                                       AS 安全隐患等级,
+               CASE
+                   p.SAFEPROBLEN_STATE
+                   WHEN 1 THEN
+                       '待分配'
+                   WHEN 2 THEN
+                       '待整改'
+                   WHEN 3 THEN
+                       '待验收'
+                   WHEN 4 THEN
+                       '验收合格'
+                   WHEN 5 THEN
+                       '验收不通过'
+                   END                                                       AS 质量问题状态,
+               p.SAFEPROBLEN_EXPLAIN                                         AS 安全隐患说明,
+               p.SAFEPROBLEN_IMG                                             AS 问题图片地址,
+               group_concat(
+                       (SELECT IFNULL(u.REALNAME, '') FROM t_user u WHERE (u.USER_ID = qu.USER_ID))
+                   )                                                         AS 检查人,
+               p.SAFEPROBLEN_CHECKFOREIGNUSER                                AS 检查人_外来人员,
+               DATE_FORMAT(p.SAFEPROBLEN_CHECKTIME, '%Y-%m-%d %H:%i:%s')     AS 检查日期,
+               (
+                   SELECT u.REALNAME
+                   FROM t_user u
+                   WHERE (u.USER_ID = p.SAFEPROBLEN_RECTIFYUSERID))          AS 整改人,
+               DATE_FORMAT(p.SAFEPROBLEN_RECTIFYTIME, '%Y-%m-%d %H:%i:%s')   AS 整改期限,
+               p.SAFEPROBLEN_RECTIFYFOR                                      AS 整改要求,
+               DATE_FORMAT(p.SAFEPROBLEN_RECTIFYACTIME, '%Y-%m-%d %H:%i:%s') AS 实际整改日期,
+               p.SAFEPROBLEN_RECTIFYIMG                                      AS 整改后图片,
+               (
+                   SELECT u.REALNAME
+                   FROM t_user u
+                   WHERE (u.USER_ID = p.SAFEPROBLEN_ACCEPTUSERID))           AS 验收人,
+               p.SAFEPROBLEN_ACCEPTINFO                                      AS 验收说明,
+               DATE_FORMAT(p.SAFEPROBLEN_ACCEPTTIME, '%Y-%m-%d %H:%i:%s')    AS 验收时间,
+               p.CREATE_USERID                                               AS 创建人,
+               DATE_FORMAT(p.CREATE_TIME, '%Y-%m-%d %H:%i:%s')               AS 创建时间,
+               CASE
+                   p.IS_DELETE
+                   WHEN 0 THEN
+                       '否'
+                   ELSE '是'
+                   END                                                       AS 是否已删除
+        FROM (
+              p_safeproblem p
+                 LEFT JOIN p_safeproblem_user qu ON ((
+            qu.TABLE_ID = p.SAFEPROBLEN_ID
+            )))
+        where p.SAFEPROBLEN_ID = #{id}
+        GROUP BY p.SAFEPROBLEN_ID
+    </select>
+</mapper>

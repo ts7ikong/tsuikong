@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cc.mrbird.febs.server.tjdkxm.mapper.AqjlrzMapper">
+
+    <select id="selectInfoById" resultType="com.alibaba.fastjson.JSONObject">
+        SELECT p.AQJLRZ_ID                                                                                  AS 安全监理日志ID,
+               (SELECT PROJECT_NAME FROM p_project WHERE IS_DELETE = 0 AND PROJECT_ID = p.AQJLRZ_PROJECTID) AS 所属项目,
+               (SELECT REALNAME FROM t_user WHERE USER_ID = p.AQJLRZ_CREATEMANID)                           AS 记录人,
+               DATE_FORMAT(p.AQJLRZ_CREATETIME, '%Y-%m-%d %H:%i:%s')                                        AS 记录时间,
+               p.AQJLRZ_SGBW                                                                                AS 施工情况_施工部位,
+               p.AQJLRZ_SGNR                                                                                AS 施工情况_施工内容,
+               p.AQJLRZ_RYFM                                                                                AS 监理工作及处理情况_安全生产方面巡视检查记录_人员方面,
+               p.AQJLRZ_SS                                                                                  AS 监理工作及处理情况_安全生产方面巡视检查记录_设施,
+               p.AQJLRZ_SBJAQSGYD                                                                           AS 监理工作及处理情况_安全生产方面巡视检查记录_设备及用电,
+               p.AQJLRZ_QTQK                                                                                AS 监理工作及处理情况_安全生产方面巡视检查记录_其他,
+               p.AQJLRZ_QZDWTJFCQK                                                                          AS 监理工作及处理情况_存在的问题及复查情况,
+               p.AQJLRZ_YSQK                                                                                AS 验收情况,
+               p.AQJLRZ_JZJSJQK                                                                             AS 见证及送检情况,
+               p.AQJLRZ_PZQK                                                                                AS 旁站情况,
+               p.AQJLRZ_SHSPQK                                                                              AS 审核审批情况,
+               p.AQJLRZ_LWHJ                                                                                AS 来往函件,
+               p.AQJLRZ_QT                                                                                  AS 其他,
+               p.AQJLRZ_JLGCS                                                                               AS 监理工程师,
+               p.AQJLRZ_ZJLGCS                                                                              AS 总监理工程师,
+               p.AQJLRZ_MAXQW                                                                               AS 最高气温,
+               p.AQJLRZ_MINQW                                                                               AS 最低气温,
+               CASE
+                   p.AQJLRZ_QH
+                   WHEN 1 THEN
+                       '晴'
+                   WHEN 2 THEN
+                       '阴'
+                   WHEN 3 THEN
+                       '雨'
+                   WHEN 4 THEN
+                       '雪'
+                   END                                                                                      AS 气候,
+               CASE
+                   p.IS_DELETE
+                   WHEN 0 THEN
+                       '否'
+                   ELSE '是'
+                   END                                                                                      AS 是否已删除
+        FROM p_aqjlrz p
+        where p.AQJLRZ_ID = #{id}
+    </select>
+    <select id="selectPageInfo" resultType="cc.mrbird.febs.common.core.entity.tjdkxm.Aqjlrz">
+        SELECT
+        p.AQJLRZ_ID,
+        p.AQJLRZ_PROJECTID,
+        ( SELECT PROJECT_NAME FROM p_project WHERE IS_DELETE = 0 AND PROJECT_ID = p.AQJLRZ_PROJECTID ) PROJECT_NAME,
+        p.AQJLRZ_CREATEMAN,
+        p.AQJLRZ_CREATEMANID,
+        ( SELECT REALNAME FROM t_user WHERE `STATUS` != 2 AND USER_ID = p.AQJLRZ_CREATEMANID ) USERNAME,
+        p.AQJLRZ_CREATETIME,
+        p.AQJLRZ_SGBW,
+        p.AQJLRZ_SGNR,
+        p.AQJLRZ_RYFM,
+        p.AQJLRZ_SS,
+        p.AQJLRZ_SBJAQSGYD,
+        p.AQJLRZ_QTQK,
+        p.AQJLRZ_QZDWTJFCQK,
+        p.AQJLRZ_YSQK,
+        p.AQJLRZ_JZJSJQK,
+        p.AQJLRZ_PZQK,
+        p.AQJLRZ_SHSPQK,
+        p.AQJLRZ_LWHJ,
+        p.AQJLRZ_QT,
+        p.AQJLRZ_JLGCS,
+        p.AQJLRZ_ZJLGCS,
+        p.AQJLRZ_MAXQW,
+        p.AQJLRZ_MINQW,
+        p.AQJLRZ_QH,
+        p.IS_DELETE
+        FROM
+        p_aqjlrz p
+        WHERE 1=1
+        <if test="ew != null">
+            <if test="ew.nonEmptyOfWhere">
+                AND
+            </if>
+            ${ew.sqlSegment}
+        </if>
+    </select>
+</mapper>

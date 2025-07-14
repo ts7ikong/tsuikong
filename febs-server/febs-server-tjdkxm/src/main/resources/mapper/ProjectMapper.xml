@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cc.mrbird.febs.server.tjdkxm.mapper.ProjectMapper">
+
+    <select id="selectProjectId" resultType="java.lang.Long">
+        select PROJECT_ID
+        from p_project
+        where 1=1
+        <if test="projectIds !=null and projectIds.size()>0">
+            and PROJECT_ID in
+            <foreach item="item" collection="projectIds" index="index" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        and PROJECT_NAME like CONCAT('%', #{projectName}, '%')
+    </select>
+    <select id="selectPageInfo" resultType="cc.mrbird.febs.common.core.entity.tjdkxm.Project">
+        SELECT p.PROJECT_ID,
+        p.PROJECT_CODE,
+        p.PROJECT_NAME,
+        p.PROJECT_TYPE,
+        p.PROJECT_ADDR,
+        p.PROJECT_LONGITUDE,
+        p.PROJECT_LATITUDE,
+        p.PROJECT_COST,
+        p.PROJECT_SCALE,
+        p.PROJECT_USERID,
+        p.PROJECT_PERSON,
+        p.PROJECT_LINK,
+--         (SELECT REALNAME FROM t_user WHERE USER_ID = p.PROJECT_USERID) AS projectPerson,
+--         (SELECT MOBILE FROM t_user WHERE USER_ID = p.PROJECT_USERID) AS projectLink,
+        p.PROJECT_BASUA,
+        p.PROJECT_UNCOLLECTED,
+        p.PROJECT_RECEIVED,
+        p.PROJECT_RECEIVABLE,
+        p.PROJECT_SCHEDULE,
+        p.PROJECT_PROGRESS,
+        p.PROJECT_CDEPT,
+        (
+        SELECT CONCAT('[', GROUP_CONCAT(JSON_OBJECT('name', NAME, 'person', PERSON, 'link', LINK)), ']')
+        FROM p_project_relate
+        WHERE type = 1
+        GROUP BY TABLE_ID
+        HAVING TABLE_ID = p.PROJECT_ID
+        ) jsdw,
+        (
+        SELECT CONCAT('[', GROUP_CONCAT(JSON_OBJECT('name', NAME, 'person', PERSON, 'link', LINK)), ']')
+        FROM p_project_relate
+        WHERE type = 2
+        GROUP BY TABLE_ID
+        HAVING TABLE_ID = p.PROJECT_ID
+        ) sgdw,
+        (
+        SELECT CONCAT('[', GROUP_CONCAT(JSON_OBJECT('name', NAME, 'person', PERSON, 'link', LINK)), ']')
+        FROM p_project_relate
+        WHERE type = 3
+        GROUP BY TABLE_ID
+        HAVING TABLE_ID = p.PROJECT_ID
+        ) jldw,
+        (
+        SELECT CONCAT('[', GROUP_CONCAT(JSON_OBJECT('name', NAME, 'person', PERSON, 'link', LINK)), ']')
+        FROM p_project_relate
+        WHERE type = 4
+        GROUP BY TABLE_ID
+        HAVING TABLE_ID = p.PROJECT_ID
+        ) sjdw,
+        (
+        SELECT CONCAT('[', GROUP_CONCAT(JSON_OBJECT('name', NAME, 'person', PERSON, 'link', LINK)), ']')
+        FROM p_project_relate
+        WHERE type = 5
+        GROUP BY TABLE_ID
+        HAVING TABLE_ID = p.PROJECT_ID
+        ) kcdw,
+        p.PROJECT_STARTIME,
+        p.PROJECT_PARCELUNITID,
+        (
+        SELECT CONCAT('[', GROUP_CONCAT(JSON_OBJECT('name', NAME, 'person', PERSON, 'link', LINK)), ']')
+        FROM p_project_relate
+        WHERE type = 6
+        GROUP BY TABLE_ID
+        HAVING TABLE_ID = p.PROJECT_ID
+        ) auditdw,
+        p.PROJECT_ENDTIME,
+        p.PROJECT_PEOPLENUMBER,
+        p.PROJECT_PICTURES,
+        p.IS_DELETE,
+        p.CREATE_USERID,
+        p.CREATE_TIME
+        FROM p_project p
+        WHERE 1 = 1
+        <if test="ew != null">
+            <if test="ew.nonEmptyOfWhere">
+                AND
+            </if>
+            ${ew.sqlSegment}
+        </if>
+    </select>
+    <select id="selectInfoById" resultType="com.alibaba.fastjson.JSONObject">
+        SELECT p.PROJECT_ID                                                   AS 项目ID,
+               p.PROJECT_CODE                                                 AS 项目编码,
+               p.PROJECT_NAME                                                 AS 项目名称,
+               (SELECT REALNAME FROM t_user WHERE USER_ID = p.PROJECT_USERID) AS 项目负责人,
+               (SELECT MOBILE FROM t_user WHERE USER_ID = p.PROJECT_USERID)   AS 项目负责人联系方式,
+               CASE
+                   p.PROJECT_TYPE
+                   WHEN 1 THEN '工业建筑工程'
+                   WHEN 2 THEN '民用建筑工程'
+                   WHEN 3 THEN '构筑物工程'
+                   WHEN 4 THEN '单独土石方工程'
+                   WHEN 5 THEN '桩基础工程'
+                   END                                                        AS 工程类型,
+               p.PROJECT_ADDR                                                 AS 项目地址,
+               p.PROJECT_LONGITUDE                                            AS 经度,
+               p.PROJECT_LATITUDE                                             AS 纬度,
+               p.PROJECT_COST                                                 AS 工程造价,
+               p.PROJECT_SCALE                                                AS 规模,
+               p.PROJECT_LINK                                                 AS 联系方式,
+               p.PROJECT_BASUA                                                AS 项目描述,
+               p.PROJECT_UNCOLLECTED                                          AS 收款进度_未收,
+               p.PROJECT_RECEIVED                                             AS 收款进度_已收,
+               p.PROJECT_RECEIVABLE                                           AS 收款进度_应收,
+               p.PROJECT_SCHEDULE                                             AS 项目进度,
+               p.PROJECT_PROGRESS                                             AS 项目施工进度,
+               p.PROJECT_CDEPT                                                AS 行业主管部门,
+               (
+                   SELECT CONCAT('[', GROUP_CONCAT(JSON_OBJECT('名称', NAME, '负责人', PERSON, '类型方式', LINK)), ']')
+                   FROM p_project_relate
+                   WHERE type = 1
+                   GROUP BY TABLE_ID
+                   HAVING TABLE_ID = p.PROJECT_ID
+               )                                                              AS 建设单位,
+               (
+                   SELECT CONCAT('[', GROUP_CONCAT(JSON_OBJECT('名称', NAME, '负责人', PERSON, '类型方式', LINK)), ']')
+                   FROM p_project_relate
+                   WHERE type = 2
+                   GROUP BY TABLE_ID
+                   HAVING TABLE_ID = p.PROJECT_ID
+               )                                                              AS 施工单位,
+               (
+                   SELECT CONCAT('[', GROUP_CONCAT(JSON_OBJECT('名称', NAME, '负责人', PERSON, '类型方式', LINK)), ']')
+                   FROM p_project_relate
+                   WHERE type = 3
+                   GROUP BY TABLE_ID
+                   HAVING TABLE_ID = p.PROJECT_ID
+               )                                                              AS 监理单位,
+               (
+                   SELECT CONCAT('[', GROUP_CONCAT(JSON_OBJECT('名称', NAME, '负责人', PERSON, '类型方式', LINK)), ']')
+                   FROM p_project_relate
+                   WHERE type = 4
+                   GROUP BY TABLE_ID
+                   HAVING TABLE_ID = p.PROJECT_ID
+               )                                                              AS 设计单位,
+               (
+                   SELECT CONCAT('[', GROUP_CONCAT(JSON_OBJECT('名称', NAME, '负责人', PERSON, '类型方式', LINK)), ']')
+                   FROM p_project_relate
+                   WHERE type = 5
+                   GROUP BY TABLE_ID
+                   HAVING TABLE_ID = p.PROJECT_ID
+               )                                                              AS 勘察单位,
+               DATE_FORMAT(p.PROJECT_STARTIME, '%Y-%m-%d %H:%i:%s')           AS 项目开始时间,
+               (
+                   SELECT CONCAT('[', GROUP_CONCAT(JSON_OBJECT('名称', NAME, '负责人', PERSON, '类型方式', LINK)), ']')
+                   FROM p_project_relate
+                   WHERE type = 6
+                   GROUP BY TABLE_ID
+                   HAVING TABLE_ID = p.PROJECT_ID
+               )                                                              AS 审计单位,
+               DATE_FORMAT(p.PROJECT_ENDTIME, '%Y-%m-%d %H:%i:%s')            AS 项目结束时间,
+               p.PROJECT_PEOPLENUMBER                                         AS 项目工地人数,
+               p.PROJECT_PICTURES                                             AS 项目图片,
+               (SELECT REALNAME FROM t_user WHERE USER_ID = p.CREATE_USERID)  AS 创建人,
+               DATE_FORMAT(p.CREATE_TIME, '%Y-%m-%d %H:%i:%s')                AS 创建日期,
+               CASE
+                   p.IS_DELETE
+                   WHEN 0 THEN '否'
+                   ELSE '是'
+                   END                                                        AS 是否已删除
+        FROM p_project p
+        where p.PROJECT_ID = #{id}
+    </select>
+    <select id="selectAllChoosesAll" resultType="java.util.Map">
+        SELECT DISTINCT p.PROJECT_ID,
+                        p.PROJECT_NAME,
+                        pups.UNIT_ID   AS unitengineId,
+                        pups.UNIT_NAME AS unitengineName,
+                        pups.PARCEL_ID,
+                        pups.PARCEL_NAME,
+                        pups.SUBITEM_ID,
+                        pups.SUBITEM_NAME
+        FROM p_project p
+                 LEFT JOIN (
+            SELECT pu.UNIT_PROJECTID,
+                   pu.UNIT_ID,
+                   pu.UNIT_NAME,
+                   pps.PARCEL_ID,
+                   pps.PARCEL_NAME,
+                   pps.SUBITEM_ID,
+                   pps.SUBITEM_NAME
+            FROM p_unitengine pu
+                     LEFT JOIN (
+                SELECT pp.PARCEL_UNITENGINEID,
+                       pp.PARCEL_ID,
+                       pp.PARCEL_NAME,
+                       ps.SUBITEM_ID,
+                       ps.SUBITEM_NAME
+                FROM p_parcel pp
+                         LEFT JOIN p_subitem ps ON ps.SUBITEM_PARCELID = pp.PARCEL_ID
+                WHERE pp.IS_DELETE = 0
+                  AND ps.IS_DELETE = 0
+            ) AS pps ON pu.UNIT_ID = pps.PARCEL_UNITENGINEID
+            WHERE pu.IS_DELETE = 0
+        ) pups ON pups.UNIT_PROJECTID = p.PROJECT_ID
+        WHERE p.IS_DELETE = 0
+        ORDER BY p.PROJECT_ID,
+                 pups.UNIT_ID,
+                 pups.PARCEL_ID,
+                 pups.SUBITEM_ID;
+    </select>
+</mapper>

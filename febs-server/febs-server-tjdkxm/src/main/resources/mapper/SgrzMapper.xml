@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cc.mrbird.febs.server.tjdkxm.mapper.SgrzMapper">
+
+    <select id="selectPageInfo" resultType="cc.mrbird.febs.common.core.entity.tjdkxm.Sgrz">
+        SELECT
+        p.SGRZ_ID,
+        p.SGRZ_PROJECTID,
+        ( SELECT PROJECT_NAME FROM p_project WHERE PROJECT_ID = p.SGRZ_PROJECTID ) AS projectName,
+        p.SGRZ_CREATEMANID,
+        ( SELECT REALNAME FROM t_user WHERE USER_ID = p.SGRZ_CREATEMANID ) AS sgrzCreateman,
+        p.SGRZ_CREATETIME,
+        p.SGRZ_MAXQW,
+        p.SGRZ_MINQW,
+        p.SGRZ_SWTQ,
+        p.SGRZ_XWTX,
+        p.SGRZ_WSTQ,
+        p.SGRZ_SGSGBW,
+        p.SGRZ_SGSGRS,
+        p.SGRZ_SGSXNR,
+        p.SGRZ_SGJDJZ,
+        p.SGRZ_SGXCTP,
+        p.SGRZ_AQSGBW,
+        p.SGRZ_AQSGRS,
+        p.SGRZ_AQSXNR,
+        p.SGRZ_AQJJJC,
+        p.SGRZ_AQXCTP,
+        p.SGRZ_ZLSGBW,
+        p.SGRZ_ZLSGRS,
+        p.SGRZ_ZLSXNR,
+        p.SGRZ_ZLJJJC,
+        p.SGRZ_ZLXCTP,
+        p.SGRZ_QTSGBW,
+        p.SGRZ_QTSGRS,
+        p.SGRZ_QTSXNR,
+        p.SGRZ_QTJJJC,
+        p.SGRZ_QTXCTP,
+        p.IS_DELETE
+        FROM
+        p_sgrz p
+        where 1=1
+        <if test="ew != null">
+            <if test="ew.nonEmptyOfWhere">
+                AND
+            </if>
+            ${ew.sqlSegment}
+        </if>
+    </select>
+    <select id="selectInfoById" resultType="com.alibaba.fastjson.JSONObject">
+        SELECT p.SGRZ_ID                                           AS 施工日志ID,
+               (
+                   SELECT u.PROJECT_NAME
+                   FROM p_project u
+                   WHERE (u.PROJECT_ID = p.SGRZ_PROJECTID))        AS 所属项目,
+               (
+                   SELECT u.REALNAME
+                   FROM t_user u
+                   WHERE (u.USER_ID = p.SGRZ_CREATEMANID))         AS 记录人,
+               DATE_FORMAT(p.SGRZ_CREATETIME, '%Y-%m-%d %H:%i:%s') AS 记录时间,
+               p.SGRZ_MAXQW                                        AS 最高气温,
+               p.SGRZ_MINQW                                        AS 最低气温,
+               CASE
+                   p.SGRZ_SWTQ
+                   WHEN 1 THEN
+                       '晴'
+                   WHEN 2 THEN
+                       '阴'
+                   WHEN 3 THEN
+                       '雨'
+                   WHEN 4 THEN
+                       '雪'
+                   END                                             AS 上午天气,
+               CASE
+                   p.SGRZ_XWTX
+                   WHEN 1 THEN
+                       '晴'
+                   WHEN 2 THEN
+                       '阴'
+                   WHEN 3 THEN
+                       '雨'
+                   WHEN 4 THEN
+                       '雪'
+                   END                                             AS 下午天气,
+               CASE
+                   p.SGRZ_WSTQ
+                   WHEN 1 THEN
+                       '晴'
+                   WHEN 2 THEN
+                       '阴'
+                   WHEN 3 THEN
+                       '雨'
+                   WHEN 4 THEN
+                       '雪'
+                   END                                             AS 晚上天气,
+               p.SGRZ_SGSGBW                                       AS 施工事项_施工部位,
+               p.SGRZ_SGSGRS                                       AS 施工事项_施工人数,
+               p.SGRZ_SGSXNR                                       AS 施工事项_事项内容,
+               p.SGRZ_SGJDJZ                                       AS 施工事项_进度进展,
+               p.SGRZ_SGXCTP                                       AS 施工事项_现场图片,
+               p.SGRZ_AQSGBW                                       AS 安全事项_施工部位,
+               p.SGRZ_AQSGRS                                       AS 安全事项_施工人数,
+               p.SGRZ_AQSXNR                                       AS 安全事项_事项内容,
+               p.SGRZ_AQJJJC                                       AS 安全事项_解决举措,
+               p.SGRZ_AQXCTP                                       AS 安全事项_现场图片,
+               p.SGRZ_ZLSGBW                                       AS 质量事项_施工部位,
+               p.SGRZ_ZLSGRS                                       AS 质量事项_施工人数,
+               p.SGRZ_ZLSXNR                                       AS 质量事项_事项内容,
+               p.SGRZ_ZLJJJC                                       AS 质量事项_解决举措,
+               p.SGRZ_ZLXCTP                                       AS 质量事项_现场图片,
+               p.SGRZ_QTSGBW                                       AS 其他事项_施工部位,
+               p.SGRZ_QTSGRS                                       AS 其他事项_施工人数,
+               p.SGRZ_QTSXNR                                       AS 其他事项_事项内容,
+               p.SGRZ_QTJJJC                                       AS 其他事项_解决举措,
+               p.SGRZ_QTXCTP                                       AS 其他事项_现场图片,
+               CASE
+                   p.IS_DELETE
+                   WHEN 0 THEN
+                       '否'
+                   ELSE '是'
+                   END                                             AS 是否已删除
+        FROM p_sgrz p
+        where p.SGRZ_ID = #{id}
+    </select>
+</mapper>

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cc.mrbird.febs.server.tjdkxm.mapper.ReportingMapper">
+
+    <select id="selectPageInfo" resultType="cc.mrbird.febs.common.core.entity.tjdkxm.Reporting">
+        SELECT
+        p.REPORTING_ID,
+        p.REPORTING_TITLE,
+        p.REPORTING_USERID,
+        ( SELECT REALNAME FROM t_user WHERE USER_ID = p.REPORTING_USERID ) AS reportingUsername,
+        p.REPORTING_CONTENT,
+        p.REPORTING_TIME,
+        p.REPORTING_CHECKUSERID,
+        ( SELECT REALNAME FROM t_user WHERE USER_ID = p.REPORTING_CHECKUSERID ) AS reportingCheckusername,
+        p.REPORTING_CHECKTIME,
+        p.REPORTING_STATE,
+        p.REPORTING_RESULT,
+        p.IS_DELETE
+        FROM
+        p_reporting p
+        where 1=1
+        <if test="ew != null">
+            <if test="ew.nonEmptyOfWhere">
+                AND
+            </if>
+            ${ew.sqlSegment}
+        </if>
+    </select>
+    <select id="selectInfoById" resultType="com.alibaba.fastjson.JSONObject">
+        SELECT p.REPORTING_ID                                          AS 工作汇报ID,
+               p.REPORTING_TITLE                                       AS 汇报标题,
+               (
+                   SELECT u.REALNAME
+                   FROM t_user u
+                   WHERE (u.USER_ID = p.REPORTING_USERID))             AS 汇报人,
+               p.REPORTING_CONTENT                                     AS 汇报内容,
+               DATE_FORMAT(p.REPORTING_TIME, '%Y-%m-%d %H:%i:%s')      AS 汇报时间,
+               (
+                   SELECT u.REALNAME
+                   FROM t_user u
+                   WHERE (u.USER_ID = p.REPORTING_CHECKUSERID))        AS 审批人,
+               DATE_FORMAT(p.REPORTING_CHECKTIME, '%Y-%m-%d %H:%i:%s') AS 审批时间,
+               CASE
+                   p.REPORTING_STATE
+                   WHEN 0 THEN
+                       '待审批'
+                   ELSE '已审批'
+                   END                                                 AS 审批状态,
+               p.REPORTING_RESULT                                      AS 审批批语,
+               CASE
+                   p.IS_DELETE
+                   WHEN 0 THEN
+                       '否'
+                   ELSE '是'
+                   END                                                 AS 是否已删除
+        FROM p_reporting p
+        where p.REPORTING_ID = #{id}
+    </select>
+</mapper>

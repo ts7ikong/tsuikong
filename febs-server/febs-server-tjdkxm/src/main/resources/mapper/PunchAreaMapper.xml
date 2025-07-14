@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cc.mrbird.febs.server.tjdkxm.mapper.PunchAreaMapper">
+
+    <select id="selectPageInfo" resultType="cc.mrbird.febs.common.core.entity.tjdkxm.PunchArea">
+        SELECT
+        p.PUNCHAREA_ID,
+        p.PUNCHAREA_NAME,
+        p.PUNCHAREA_LATITUDE,
+        p.PUNCHAREA_LONGITUDE,
+        p.PUNCHAREA_REDIU,
+        p.IS_DELETE,
+        GROUP_CONCAT(
+        DISTINCT ( SELECT IFNULL( t.USER_ID, '' ) FROM t_user t WHERE t.USER_ID = pu.USER_ID AND t.STATUS != '2' ))
+        AS userIds,
+        GROUP_CONCAT(
+        DISTINCT ( SELECT IFNULL( t.REALNAME, '' ) FROM t_user t WHERE t.USER_ID = pu.USER_ID AND t.STATUS != '2' ))
+        AS userNames,
+        (
+        SELECT
+        CONCAT(
+        '[',
+        GROUP_CONCAT(
+        JSON_OBJECT(
+        'id',
+        pc.ID,
+        'startTime',
+        CONCAT(
+        IF( pc.startTimeColumn DIV 60 &lt; 10, CONCAT( '0', pc.startTimeColumn DIV 60 ), pc.startTimeColumn DIV 60 ),
+        ':',
+        IF( pc.startTimeColumn MOD 60 &lt; 10, CONCAT( '0', pc.startTimeColumn MOD 60 ), pc.startTimeColumn MOD 60 )),
+        'endTime',
+        CONCAT(IF( pc.endTimeColumn DIV 60 &lt; 10, CONCAT( '0', pc.endTimeColumn DIV 60 ), pc.endTimeColumn DIV 60 ),
+        ':',
+        IF( pc.endTimeColumn MOD 60 &lt; 10, CONCAT( '0', pc.endTimeColumn MOD 60 ), pc.endTimeColumn MOD 60 )))
+        ),
+        ']')
+        FROM
+        p_puncharea_clocktime pc
+        WHERE
+        pc.TABLE_ID = p.PUNCHAREA_ID
+        GROUP BY
+        pc.TABLE_ID
+        ) AS clockTimes
+        FROM
+        p_puncharea p
+        LEFT JOIN p_puncharea_user pu ON pu.TABLE_ID = p.PUNCHAREA_ID
+        WHERE
+        1 = 1
+        <if test="ew != null">
+            <if test="ew.nonEmptyOfWhere">
+                AND
+            </if>
+            ${ew.sqlSegment}
+        </if>
+    </select>
+    <select id="selectInfoById" resultType="com.alibaba.fastjson.JSONObject">
+        SELECT p.PUNCHAREA_ID        AS 区域ID,
+               p.PUNCHAREA_NAME      AS 区域名称,
+               p.PUNCHAREA_LATITUDE  AS 经度,
+               p.PUNCHAREA_LONGITUDE AS 纬度,
+               p.PUNCHAREA_REDIU     AS 半径,
+               GROUP_CONCAT(
+                   DISTINCT ( SELECT IFNULL( t.REALNAME, '' ) FROM t_user t WHERE t.USER_ID = pu.USER_ID AND t.STATUS != '2' ))
+                                     AS 区域打卡人,
+               (
+                   SELECT CONCAT('[', GROUP_CONCAT(JSON_OBJECT('开始打卡时间', pc.startTimeColumn, '结束打卡时间',
+                                                               pc.endTimeColumn)), ']')
+                   FROM p_puncharea_clocktime pc
+                   WHERE pc.TABLE_ID = p.PUNCHAREA_ID
+                   GROUP BY pc.TABLE_ID
+               )                     AS 打卡时间段,
+               CASE
+                   p.IS_DELETE
+                   WHEN 0 THEN '否'
+                   ELSE '是'
+                   END               AS 是否已删除
+        FROM p_puncharea p
+                 LEFT JOIN p_puncharea_user pu ON pu.TABLE_ID = p.PUNCHAREA_ID
+        where p.PUNCHAREA_ID = #{id}
+        group by p.PUNCHAREA_ID
+    </select>
+    <select id="getPunchAreaUser" resultType="java.util.Map">
+        SELECT
+        temp.USER_ID AS userId,
+        temp.USERNAME AS username,
+        temp.REALNAME AS realname,
+        ( SELECT d.DEPT_NAME FROM p_dept d WHERE d.IS_DELETE = 0 AND d.DEPT_ID = temp.DEPT_ID ) AS deptName,
+        GROUP_CONCAT(
+        (
+        SELECT DISTINCT IFNULL( p.PROJECT_NAME, '' )
+        FROM p_project p
+        WHERE p.IS_DELETE = 0 AND p.PROJECT_ID = up.PROJECT_ID)
+        ) AS projectName,
+        temp.MOBILE AS mobile
+        FROM
+        (
+        SELECT temp.USER_ID,temp.USERNAME,temp.REALNAME,temp.DEPT_ID,temp.MOBILE
+        FROM
+        (
+        SELECT u.USER_ID,u.USERNAME,u.REALNAME,u.DEPT_ID,u.MOBILE
+        FROM
+        t_user u
+        WHERE u.STATUS != '2' AND u.`LEVEL` > '1' AND u.USER_ID > 1
+        <if test="username!=null and username!=''">
+            and (u.REALNAME LIKE CONCAT('%', #{username}, '%') or u.USERNAME LIKE CONCAT('%', #{username}, '%'))
+        </if>
+        <if test="deptId!=null ">
+            and u.DEPT_ID=#{deptId}
+        </if>
+        UNION ALL
+        SELECT p.USER_ID,'' AS USERNAME, '' AS REALNAME, -1 AS DEPT_ID,'' AS MOBILE
+        FROM
+        p_puncharea_user p
+        WHERE p.TABLE_ID = #{punchAreaId}
+        ) temp
+        GROUP BY temp.USER_ID
+        HAVING COUNT( temp.USER_ID ) = #{type} AND temp.USERNAME != ''
+        ) temp LEFT JOIN p_userproject up ON temp.USER_ID = up.USER_ID
+        where 1=1
+        <if test="projectId!=null">
+            and up.PROJECT_ID=#{projectId}
+        </if>
+        GROUP BY temp.USER_ID
+    </select>
+</mapper>

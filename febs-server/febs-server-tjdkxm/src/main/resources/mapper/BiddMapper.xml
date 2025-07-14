@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cc.mrbird.febs.server.tjdkxm.mapper.BiddMapper">
+
+    <select id="selectPageInfo" resultType="cc.mrbird.febs.common.core.entity.tjdkxm.Bidd">
+
+    </select>
+    <select id="selectInfoById" resultType="com.alibaba.fastjson.JSONObject">
+        SELECT p.BIDD_ID                                                     AS 招标ID,
+               p.BIDD_PROJECTNAME                                            AS 招标项目,
+               p.BIDD_UNIT                                                   AS 招标单位,
+               DATE_FORMAT(p.BIDD_TIME, '%Y-%m-%d %H:%i:%s')                 AS 招标时间,
+               p.BIDD_ADDR                                                   AS 项目地址,
+               p.BIDD_BOND                                                   AS 保证金,
+               p.BIDD_TUIBOND                                                AS 招标文件,
+               (SELECT REALNAME FROM t_user WHERE USER_ID = p.CREATE_USERID) AS 创建人,
+               DATE_FORMAT(p.CREATE_TIME, '%Y-%m-%d %H:%i:%s')               AS 创建时间,
+               CASE
+                   p.IS_DELETE
+                   WHEN 0 THEN
+                       '否'
+                   ELSE '是'
+                   END
+                                                                             AS 是否已删除
+        FROM p_bidd p
+        WHERE p.BIDD_ID = #{id}
+    </select>
+</mapper>

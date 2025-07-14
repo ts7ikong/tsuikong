@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cc.mrbird.febs.server.tjdkxm.mapper.UserMapper">
+    <resultMap id="menus" type="cc.mrbird.febs.common.core.entity.tjdkxm.model.ProjectDTO">
+        <result property="projectId" column="PROJECT_ID"/>
+        <result property="projectName" column="PROJECT_NAME"/>
+        <collection property="users" ofType="java.util.Map"
+                    resultMap="users"/>
+    </resultMap>
+    <resultMap id="users" type="java.util.Map">
+        <result property="DEPT_ID" column="DEPT_ID"/>
+        <result property="DEPT_NAME" column="DEPT_NAME"/>
+        <result property="AVATAR" column="AVATAR"/>
+        <result property="MOBILE" column="MOBILE"/>
+        <result property="USERNAME" column="USERNAME"/>
+        <result property="REALNAME" column="REALNAME"/>
+        <result property="USER_ID" column="USER_ID"/>
+    </resultMap>
+    <select id="getProjectUserNew" resultType="java.util.Map" resultMap="menus">
+        SELECT DISTINCT
+        t.USER_ID AS USER_ID,
+        t.USERNAME AS USERNAME,
+        t.REALNAME AS REALNAME,
+        IFNULL( t.AVATAR, '' ) AS AVATAR,
+        t.MOBILE AS MOBILE,
+        t.DEPT_ID AS DEPT_ID,
+        t.DEPT_NAME AS DEPT_NAME,
+        temp.PROJECT_ID AS PROJECT_ID,
+        ( SELECT pp.PROJECT_NAME FROM p_project pp WHERE pp.PROJECT_ID = temp.PROJECT_ID ) AS PROJECT_NAME
+        FROM
+        (
+        SELECT t.USER_ID,t.USERNAME,t.REALNAME,t.AVATAR,t.MOBILE,t.DEPT_ID,p.DEPT_NAME
+        FROM t_user AS t
+        LEFT JOIN p_dept AS p ON t.DEPT_ID = p.DEPT_ID
+        AND p.IS_DELETE = 0
+        WHERE t.STATUS != 2 AND t.LEVEL > 1 ) t
+        RIGHT JOIN (
+        SELECT
+        ur.USER_ID,ur.PROJECT_ID
+        FROM
+        (
+        SELECT ur.USER_ID, ur.ROLE_ID, p.PROJECT_ID
+        FROM t_user_role ur LEFT JOIN t_role r ON ur.ROLE_ID = r.ROLE_ID,p_project p
+        WHERE r.TYPE = 2 AND r.ROLE_ID > 1 AND p.IS_DELETE = 0
+        <if test="projectIds !=null and projectIds.size()>0">
+            AND p.PROJECT_ID in
+            <foreach item="item" collection="projectIds" index="index" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        ) AS ur
+        RIGHT JOIN (
+        SELECT rm.ROLE_ID
+        FROM t_role_menu AS rm RIGHT JOIN t_button AS b ON b.BUTTON_MENUID = rm.MENU_ID
+        WHERE rm.ROLE_ID > 1
+        <if test="menuId!=null">
+            AND b.BUTTON_MENUID = #{menuId}
+        </if>
+        <if test="buttonId!=null">
+            AND b.BUTTON_ID = #{buttonId}
+        </if>
+        ) AS tt ON ur.ROLE_ID = tt.ROLE_ID
+        UNION ALL
+        SELECT
+        ur.USER_ID,CASE WHEN ur.PROJECT_ID !=- 1 THEN ur.PROJECT_ID ELSE tt.PROJECT_ID END AS PROJECT_ID
+        FROM t_user_role AS ur
+        RIGHT JOIN (
+        SELECT
+        rm.ROLE_ID,rm.PROJECT_ID
+        FROM t_role_menu AS rm RIGHT JOIN t_button AS b ON b.BUTTON_MENUID = rm.MENU_ID
+        WHERE rm.ROLE_ID > 1
+        <if test="menuId!=null">
+            AND b.BUTTON_MENUID = #{menuId}
+        </if>
+        <if test="buttonId!=null">
+            AND b.BUTTON_ID = #{buttonId}
+        </if>
+        ) AS tt ON ur.ROLE_ID = tt.ROLE_ID
+        where 1=1
+        <if test="projectIds !=null and projectIds.size()>0">
+            AND tt.PROJECT_ID in
+            <foreach item="item" collection="projectIds" index="index" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        ) AS temp ON t.USER_ID = temp.USER_ID
+        WHERE t.USER_ID is NOT NULL
+        <if test="projectIds !=null and projectIds.size()>0">
+            AND temp.PROJECT_ID in
+            <foreach item="item" collection="projectIds" index="index" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        ORDER BY temp.PROJECT_ID, t.USER_ID
+    </select>
+    <select id="getUserIdByQualityproblem" resultType="java.lang.Long">
+        SELECT
+        t.USER_ID
+        FROM
+        t_user t
+        WHERE t.STATUS = 1 and
+        t.REALNAME LIKE CONCAT( '%', #{username}, '%' )
+        AND EXISTS ( SELECT p.QUALITYPROBLEN_CHECKUSERID FROM p_qualityproblem p
+        WHERE 1=1
+        <if test="projectIds !=null and projectIds.size()>0">
+            and p.QUALITYPROBLEN_PROJECTID in
+            <foreach item="item" collection="projectIds" index="index" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        AND p.IS_DELETE = 0 and p.QUALITYPROBLEN_CHECKUSERID= t.USER_ID )
+    </select>
+    <select id="getUserListNewByMenuIdAndButotnId" resultType="java.util.Map">
+        SELECT DISTINCT t.USER_ID AS USER_ID,
+        t.USERNAME AS USERNAME,
+        t.REALNAME AS REALNAME,
+        IFNULL(t.AVATAR, '') AS AVATAR,
+        t.MOBILE AS MOBILE,
+        p.DEPT_ID AS DEPT_ID,
+        p.DEPT_NAME AS DEPT_NAME
+        FROM t_user t
+        LEFT JOIN p_dept p ON t.DEPT_ID = p.DEPT_ID
+        AND p.IS_DELETE = 0
+        WHERE t.STATUS != 2
+        AND t.LEVEL > 1
+        AND t.USER_ID IN (
+        SELECT DISTINCT
+        ur.USER_ID
+        FROM
+        t_user_role ur
+        LEFT JOIN t_role_button rb ON rb.ROLE_ID = ur.ROLE_ID
+        LEFT JOIN t_button b ON b.BUTTON_ID = rb.BUTTON_ID
+        WHERE
+        1 = 1
+        <if test="menuId!=null">
+            AND b.BUTTON_MENUID = #{menuId}
+        </if>
+        <if test="buttonId!=null">
+            AND b.BUTTON_ID = #{buttonId}
+        </if>
+        )
+        ORDER BY
+        t.USER_ID
+    </select>
+    <select id="selectMailList" resultType="java.util.Map">
+        select t.USER_ID, t.REALNAME, t.MOBILE, t.AVATAR, t.DEPT_ID, p.DEPT_NAME
+        from t_user t
+        LEFT JOIN p_dept p on t.DEPT_ID = p.DEPT_ID and p.IS_DELETE = 0
+        where 1=1 and t.LEVEL!=1 and t.STATUS != 2
+        <if test="ew != null">
+            <if test="ew.nonEmptyOfWhere">
+                AND
+            </if>
+            ${ew.sqlSegment}
+        </if>
+    </select>
+
+</mapper>

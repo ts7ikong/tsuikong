@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cc.mrbird.febs.server.tjdkxm.mapper.ParcelMapper">
+
+    <select id="getParcelIds" resultType="java.lang.Long">
+        select p.PARCEL_ID
+        from p_parcel p
+        where 1=1
+        <if test="projectIds !=null and projectIds.size()>0">
+            and p.PARCEL_PROJECTID in
+            <foreach item="item" collection="projectIds" index="index" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+
+        and p.IS_DELETE = 0
+        AND p.PARCEL_NAME like CONCAT('%', #{name}, '%')
+    </select>
+    <select id="selectPageInfo" resultType="cc.mrbird.febs.common.core.entity.tjdkxm.Parcel">
+
+    </select>
+    <select id="selectInfoById" resultType="com.alibaba.fastjson.JSONObject">
+        SELECT p.PARCEL_ID                                                                        AS 分部ID,
+               (SELECT u.UNIT_NAME FROM p_unitengine u WHERE (u.UNIT_ID = p.PARCEL_UNITENGINEID)) AS 单位项目,
+               (SELECT u.PROJECT_NAME FROM p_project u WHERE (u.PROJECT_ID = p.PARCEL_PROJECTID)) AS 所属项目,
+               p.PARCEL_NAME                                                                      AS 分部名称,
+               p.PARCEL_CONTENT                                                                   AS 分部内容,
+               p.PARCEL_UNITID                                                                    AS 分部单位,
+               p.PARCEL_PERSON                                                                    AS 负责人,
+               p.PARCEL_LINK                                                                      AS 联系电话,
+               (SELECT REALNAME FROM t_user WHERE USER_ID = p.CREATE_USERID)                      AS 创建人,
+               DATE_FORMAT(p.CREATE_TIME, '%Y-%m-%d %H:%i:%s')                                    AS 创建时间,
+               CASE p.IS_DELETE
+                   WHEN 0 THEN '否'
+                   ELSE '是'
+                   END                                                                            AS 是否已删除
+        FROM p_parcel p
+        where p.PARCEL_ID = #{id}
+    </select>
+</mapper>

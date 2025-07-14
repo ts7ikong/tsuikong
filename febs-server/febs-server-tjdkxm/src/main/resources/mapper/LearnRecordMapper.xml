@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cc.mrbird.febs.server.tjdkxm.mapper.LearnRecordMapper">
+
+    <select id="selectPageInfo" resultType="cc.mrbird.febs.common.core.entity.tjdkxm.LearnRecord">
+        SELECT
+        p.LEARNRECORD_ID,
+        p.PARTYLEARN_ID,
+        p.LEARNRECORD_PROJECTID,
+        ( SELECT PROJECT_NAME FROM p_project WHERE PROJECT_ID = p.LEARNRECORD_PROJECTID ) AS projectName,
+        p.LEARNRECORD_USERID,
+        ( SELECT REALNAME FROM t_user WHERE USER_ID = p.LEARNRECORD_USERID ) AS learnrecordUsername,
+        p.LEARNRECORD_ANNX,
+        p.LEARNRECORD_ADDR,
+        p.LEARNRECORD_MSG,
+        p.IS_DELETE,
+        p.CREATE_TIME
+        FROM
+        p_learnrecord p
+        where 1=1
+        <if test="ew != null">
+            <if test="ew.nonEmptyOfWhere">
+                AND
+            </if>
+            ${ew.sqlSegment}
+        </if>
+    </select>
+    <select id="selectInfoById" resultType="com.alibaba.fastjson.JSONObject">
+        SELECT p.LEARNRECORD_ID                                                   AS 学习记录ID,
+               p.PARTYLEARN_ID                                                    AS 党建标题,
+               (SELECT REALNAME FROM t_user WHERE USER_ID = p.LEARNRECORD_USERID) AS 学习人,
+               p.LEARNRECORD_ANNX                                                 AS 附件,
+               p.LEARNRECORD_ADDR                                                 AS 图片,
+               p.LEARNRECORD_MSG                                                  AS 留言,
+               CREATE_TIME                                                        AS 学习时间,
+               CASE
+                   p.IS_DELETE
+                   WHEN 0 THEN
+                       '否'
+                   ELSE '是'
+                   END                                                            AS 是否已删除
+        FROM p_learnrecord p
+    </select>
+</mapper>

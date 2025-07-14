@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cc.mrbird.febs.server.tjdkxm.mapper.SubitemMapper">
+
+    <select id="getSubitemIds" resultType="java.lang.Long">
+        select p.SUBITEM_ID
+        from p_subitem p
+        where 1=1
+        <if test="projectIds !=null and projectIds.size()>0">
+            and p.SUBITEM_PROJECTID in
+            <foreach item="item" collection="projectIds" index="index" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        and p.IS_DELETE = 0
+        and p.SUBITEM_NAME like CONCAT('%', #{name}, '%')
+    </select>
+    <select id="selectPageInfo" resultType="cc.mrbird.febs.common.core.entity.tjdkxm.Subitem">
+
+    </select>
+    <select id="selectInfoById" resultType="com.alibaba.fastjson.JSONObject">
+        SELECT p.SUBITEM_ID                                    AS 分项ID,
+               (
+                   SELECT u.PROJECT_NAME
+                   FROM p_project u
+                   WHERE (u.PROJECT_ID = p.SUBITEM_PROJECTID)) AS 所属项目,
+               (
+                   SELECT u.UNIT_NAME
+                   FROM p_unitengine u
+                   WHERE (u.UNIT_ID = p.SUBITEM_UNITENGINEID)) AS 单位项目,
+               (
+                   SELECT u.PARCEL_NAME
+                   FROM p_parcel u
+                   WHERE (u.PARCEL_ID = p.SUBITEM_PARCELID))   AS 分部名称,
+               p.SUBITEM_NAME                                  AS 分项工程名称,
+               p.SUBITEM_CONTENT                               AS 分项内容,
+               p.SUBITEM_UNIT                                  AS 分项单位,
+               p.SUBITEM_PERSON                                AS 负责人,
+               p.SUBITEM_LINK                                  AS 联系电话,
+               (
+                   SELECT u.REALNAME
+                   FROM t_user u
+                   WHERE (u.USER_ID = p.CREATE_USERID))        AS 创建人,
+               DATE_FORMAT(p.CREATE_TIME, '%Y-%m-%d %H:%i:%s') AS 创建时间,
+               CASE
+                   p.IS_DELETE
+                   WHEN 0 THEN
+                       '否'
+                   ELSE '是'
+                   END                                         AS 是否已删除
+        FROM p_subitem p
+        where p.SUBITEM_ID = #{id}
+    </select>
+</mapper>

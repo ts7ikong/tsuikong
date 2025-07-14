@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cc.mrbird.febs.server.tjdkxm.mapper.UserPunchMapper">
+
+    <select id="selectPageInfo" resultType="cc.mrbird.febs.common.core.entity.tjdkxm.UserPunch">
+        SELECT
+        p.PUNCH_ID,
+        p.PUNCH_USERID,
+        (SELECT REALNAME from t_user where USER_ID=p.PUNCH_USERID) AS punchUserName,
+        p.PUNCH_PUNCHAREAID,
+        (select PUNCHAREA_NAME from p_puncharea where PUNCHAREA_ID=p.PUNCH_PUNCHAREAID) AS punchPunchareaname,
+        p.PUNCH_TIME,
+        p.PUNCH_ADDR,
+        p.PUNCH_PUNCHTYEPE
+        FROM
+        p_userpunch p
+        RIGHT JOIN
+        ( SELECT u.USER_ID FROM t_user u WHERE u.USER_ID > 1 AND u.`STATUS`!= '2') u
+        ON u.USER_ID = p.PUNCH_USERID
+        WHERE 1 = 1
+        <if test="ew != null">
+            <if test="ew.nonEmptyOfWhere">
+                AND
+            </if>
+            ${ew.sqlSegment}
+        </if>
+    </select>
+
+    <select id="selectPageInfo2" resultType="cc.mrbird.febs.common.core.entity.tjdkxm.UserPunch">
+        SELECT
+        p.PUNCH_ID,
+        p.PUNCH_USERID,
+        (SELECT REALNAME from t_user where USER_ID=p.PUNCH_USERID) AS punchUserName,
+        p.PUNCH_PUNCHAREAID,
+        (select PUNCHAREA_NAME from p_puncharea where PUNCHAREA_ID=p.PUNCH_PUNCHAREAID) AS punchPunchareaname,
+        p.PUNCH_TIME,
+        p.PUNCH_ADDR,
+        p.PUNCH_PUNCHTYEPE
+        FROM
+        p_userpunch p
+        LEFT JOIN
+        ( SELECT u.USER_ID FROM t_user u WHERE u.USER_ID > 1 AND u.`STATUS`!= '2') u
+        ON u.USER_ID = p.PUNCH_USERID
+        WHERE 1 = 1
+        <if test="ew != null">
+            <if test="ew.nonEmptyOfWhere">
+                AND
+            </if>
+            ${ew.sqlSegment}
+        </if>
+    </select>
+
+    <select id="selectPageInfo1" resultType="java.lang.Integer">
+        SELECT
+        p.PUNCH_ID
+        FROM
+        p_userpunch p
+        LEFT JOIN
+        ( SELECT u.USER_ID FROM t_user u WHERE u.USER_ID > 1 AND u.`STATUS`!= '2') u
+        ON u.USER_ID = p.PUNCH_USERID
+        WHERE 1 = 1
+        <if test="ew != null">
+            <if test="ew.nonEmptyOfWhere">
+                AND
+            </if>
+            ${ew.sqlSegment}
+        </if>
+    </select>
+
+    <select id="selectInfo" resultType="cc.mrbird.febs.common.core.entity.tjdkxm.UserPunch">
+        SELECT
+        p.PUNCH_ID,
+        p.PUNCH_USERID,
+        (SELECT REALNAME from t_user where USER_ID=p.PUNCH_USERID) AS punchUserName,
+        p.PUNCH_PUNCHAREAID,
+        (select PUNCHAREA_NAME from p_puncharea where PUNCHAREA_ID=p.PUNCH_PUNCHAREAID) AS punchPunchareaname,
+        p.PUNCH_TIME,
+        p.PUNCH_ADDR,
+        p.PUNCH_PUNCHTYEPE
+        FROM
+        p_userpunch p
+        LEFT JOIN
+        ( SELECT u.USER_ID FROM t_user u WHERE u.USER_ID > 1 AND u.`STATUS`!= '2') u
+        ON u.USER_ID = p.PUNCH_USERID
+        WHERE 1 = 1
+        <if test="userPunchIds!=null">
+            and p.PUNCH_ID in (${userPunchIds})
+        </if>
+        order by convert(punchUserName using gbk) asc,p.PUNCH_TIME ASC
+    </select>
+
+    <select id="selectInfoById" resultType="com.alibaba.fastjson.JSONObject">
+        SELECT p.PUNCH_ID                                                                        AS 打卡ID,
+               (SELECT REALNAME from t_user where USER_ID = p.PUNCH_USERID)                      AS 打卡人,
+               (select PUNCHAREA_NAME from p_puncharea where PUNCHAREA_ID = p.PUNCH_PUNCHAREAID) AS 打卡区域名称,
+               DATE_FORMAT(p.PUNCH_TIME, '%Y-%m-%d %H:%i:%s')                                    AS 打卡时间,
+               p.PUNCH_ADDR                                                                      AS 打卡地点,
+               CASE
+                   p.PUNCH_PUNCHTYEPE
+                   WHEN 0 THEN
+                       '内勤打卡'
+                   ELSE '外勤打卡'
+                   END                                                                           AS 打卡类型
+        FROM p_userpunch p
+        WHERE 1 = 1
+          and p.PUNCH_ID = #{id}
+    </select>
+    <select id="noUserPunch" resultType="java.util.Map">
+        SELECT temp.USER_ID AS userId,
+        temp.USERNAME AS username,
+        temp.REALNAME AS realname,
+        (SELECT d.DEPT_NAME FROM p_dept d WHERE d.IS_DELETE = 0 AND d.DEPT_ID = temp.DEPT_ID) AS deptName,
+        temp.MOBILE AS mobile
+        FROM (
+        SELECT u.USER_ID,
+        u.USERNAME,
+        u.REALNAME,
+        u.DEPT_ID,
+        u.MOBILE
+        FROM t_user u
+        WHERE u.STATUS = '1'
+        AND u.`LEVEL` > '1'
+        UNION ALL
+        SELECT DISTINCT p.PUNCH_USERID,
+        '' AS USERNAME,
+        '' AS REALNAME,
+        -1 AS DEPT_ID,
+        '' AS MOBILE
+        FROM p_userpunch p
+        where p.PUNCH_TIME &gt; #{startDate}
+        and p.PUNCH_TIME &lt; #{startDate}
+        ) temp
+        WHERE temp.USER_ID > 1
+        <if test="username!=null and username!=''">
+            and( temp.REALNAME LIKE CONCAT('%', #{username}, '%') or temp.USERNAME LIKE CONCAT('%', #{username}, '%'))
+        </if>
+        GROUP BY temp.USER_ID
+        HAVING COUNT(temp.USER_ID) = 1 AND temp.USERNAME!=''
+    </select>
+    <select id="areInPunchArea" resultType="cc.mrbird.febs.common.core.entity.tjdkxm.PunchArea">
+        SELECT PUNCHAREA_ID,
+               PUNCHAREA_PROJECTID
+        FROM (
+                 SELECT PUNCHAREA_ID,
+                        PUNCHAREA_PROJECTID,
+                        PUNCHAREA_REDIU,
+                        round(
+                                st_distance_sphere(
+                                        point(#{longitude}, #{latitude}),
+                                        point(PUNCHAREA_LONGITUDE, PUNCHAREA_LATITUDE))) dis
+                 FROM p_puncharea
+                 WHERE IS_DELETE = 0
+                   AND PUNCHAREA_ID IN (
+                     SELECT DISTINCT p.TABLE_ID
+                     FROM p_puncharea_user p
+                     WHERE p.USER_ID = #{userId}
+                 )
+                 ORDER BY dis
+             ) test
+        WHERE test.PUNCHAREA_REDIU > test.dis
+        ORDER BY test.dis ASC LIMIT 1
+    </select>
+    <select id="arePunchAreaTime" resultType="cc.mrbird.febs.common.core.entity.tjdkxm.PunchAreaClocktime">
+        SELECT DISTINCT p.ID,
+                        p.startTimeColumn,
+                        p.endTimeColumn,
+                        p.TABLE_ID,
+                        (SELECT a.PUNCHAREA_NAME FROM p_puncharea a WHERE a.PUNCHAREA_ID = p.TABLE_ID) AS tableName
+        FROM p_puncharea_clocktime p
+                 RIGHT JOIN (SELECT a.PUNCHAREA_ID
+                             FROM p_puncharea a
+                                      LEFT JOIN p_puncharea_user u ON a.PUNCHAREA_ID =
+                                                                      u.TABLE_ID
+                             WHERE u.USER_ID = #{userId}) temp ON temp.PUNCHAREA_ID = p.TABLE_ID
+        WHERE (p.startTimeColumn &lt;= #{time} AND p.endTimeColumn &gt;= #{time})
+    </select>
+    <select id="hasPuncharea" resultType="cc.mrbird.febs.common.core.entity.tjdkxm.PunchArea">
+        SELECT a.PUNCHAREA_ID,
+               a.PUNCHAREA_NAME
+        FROM p_puncharea a
+                 LEFT JOIN p_puncharea_user u ON a.PUNCHAREA_ID = u.TABLE_ID
+        WHERE u.USER_ID = #{userId};
+    </select>
+    <select id="userPunchareaInfo" resultType="cc.mrbird.febs.common.core.entity.tjdkxm.PunchAreaClocktime">
+        SELECT p.START_TIME,
+        p.END_TIME,
+        p.ID,
+        p.TABLE_ID,
+        (SELECT a.PUNCHAREA_NAME FROM p_puncharea a WHERE a.PUNCHAREA_ID = p.TABLE_ID ) as tableName
+        FROM p_puncharea_clocktime p
+        WHERE 1=1
+        <if test="punchAreas !=null and punchAreas.size()>0">
+            and p.TABLE_ID in
+            <foreach item="item" collection="punchAreas" index="index" open="(" separator="," close=")">
+                #{item.punchAreaId}
+            </foreach>
+        </if>
+    </select>
+
+    <!--    <select id="selectUserPunchByTime" resultType="cc.mrbird.febs.common.core.entity.tjdkxm.UserPunch">-->
+    <!--        SELECT DATE_FORMAT(p.PUNCH_TIME, '%Y-%m-%d') AS dateStr,-->
+    <!--        p.PUNCH_USERID,-->
+    <!--            (SELECT t.REALNAME FROM t_user t WHERE t.USER_ID = p.PUNCH_USERID) AS punchUserName,-->
+    <!--            p.PUNCH_ID,-->
+    <!--            p.PUNCH_ADDR,-->
+    <!--            p.PUNCH_TIME,-->
+    <!--            p.PUNCH_PUNCHTYEPE,-->
+    <!--            p.PUNCH_PUNCHAREAID,-->
+    <!--            (SELECT PUNCHAREA_NAME FROM p_puncharea WHERE PUNCHAREA_ID = p.PUNCH_PUNCHAREAID) AS punchPunchareaname-->
+    <!--        FROM p_userpunch AS p-->
+    <!--        WHERE 1=1-->
+    <!--        <if test="userId!=null">-->
+    <!--            AND p.PUNCH_USERID=#{userId}-->
+    <!--        </if>-->
+    <!--        AND p.PUNCH_TIME BETWEEN CONCAT(#{startTime}, ' 00:00:00') AND CONCAT(#{endTime}, ' 23:59:59')-->
+    <!--        AND p.PUNCH_USERID > 1-->
+    <!--        GROUP BY DATE_FORMAT(p.PUNCH_TIME,'%Y-%m-%d'),p.PUNCH_ID-->
+    <!--    </select>-->
+    <select id="selectUserPunchByTime" resultType="cc.mrbird.febs.common.core.entity.tjdkxm.UserPunch">
+        SELECT
+        DATE_FORMAT( p.PUNCH_TIME, '%Y-%m-%d' ) AS dateStr,
+        p.PUNCH_USERID,
+        (SELECT t.REALNAME FROM t_user t WHERE t.USER_ID = p.PUNCH_USERID) AS punchUserName,
+        p.PUNCH_ID,
+        p.PUNCH_PUNCHTYEPE
+        FROM
+        p_userpunch AS p LEFT JOIN t_user u on p.PUNCH_USERID=u.USER_ID
+        WHERE
+        1 = 1 AND u.`STATUS`!='2'
+        <if test="userId!=null">
+            AND p.PUNCH_USERID=#{userId}
+        </if>
+        AND p.PUNCH_TIME BETWEEN CONCAT(#{startTime}, ' 00:00:00') AND CONCAT(#{endTime}, ' 23:59:59')
+        AND p.PUNCH_USERID > 1
+        GROUP BY
+        DATE_FORMAT( p.PUNCH_TIME, '%Y-%m-%d' ),p.PUNCH_ID
+        ORDER BY p.PUNCH_ID
+    </select>
+    <select id="selectUserCount" resultType="cc.mrbird.febs.common.core.entity.system.SystemUser">
+        SELECT USER_ID, REALNAME
+        from t_user
+        where `STATUS`!=2 and USER_ID>1
+        <if test="userId!=null">
+            and USER_ID=#{userId}
+        </if>
+    </select>
+    <!--                    SELECT COUNT(1)
+             FROM p_userpunch
+             WHERE (PUNCH_TIME >= DATE_SUB(NOW(), INTERVAL 10 MINUTE) AND PUNCH_USERID = #{userId});-->
+    <select id="selectCountByDay" resultType="cc.mrbird.febs.common.core.entity.tjdkxm.UserPunch">
+        SELECT PUNCH_ID,
+               PUNCH_USERID,
+               PUNCH_TIME,
+               PUNCH_PUNCHTYEPE
+        FROM p_userpunch
+        WHERE PUNCH_USERID = #{userId}
+        ORDER BY PUNCH_ID DESC LIMIT 1;
+    </select>
+</mapper>

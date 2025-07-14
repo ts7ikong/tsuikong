@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cc.mrbird.febs.server.tjdkxm.mapper.PartylearnMapper">
+
+    <select id="selectPageInfo" resultType="cc.mrbird.febs.common.core.entity.tjdkxm.Partylearn">
+        SELECT
+        p.PARTYLEARN_ID,
+        p.PARTYLEARN_TITLE,
+        p.PARTYLEARN_CONTENT,
+        p.PARTYLEARN_ANNX,
+        p.PARTYLEARN_USERID,
+        ( SELECT REALNAME FROM t_user WHERE USER_ID = p.PARTYLEARN_USERID ) AS partylearnUsername,
+        p.PARTYLEARN_TIME,
+        p.IS_DELETE,
+        p.PARTYLEARN_TYPE
+        FROM
+        p_partylearn p
+        where 1=1
+        <if test="ew != null">
+            <if test="ew.nonEmptyOfWhere">
+                AND
+            </if>
+            ${ew.sqlSegment}
+        </if>
+    </select>
+    <select id="selectInfoById" resultType="com.alibaba.fastjson.JSONObject">
+        SELECT p.PARTYLEARN_ID                                                   AS 党建学习ID,
+               p.PARTYLEARN_TITLE                                                AS 党建学习标题,
+               p.PARTYLEARN_CONTENT                                              AS 党建学习内容,
+               p.PARTYLEARN_ANNX                                                 AS 资料,
+               (SELECT REALNAME FROM t_user WHERE USER_ID = p.PARTYLEARN_USERID) AS 发表人,
+               DATE_FORMAT(p.PARTYLEARN_TIME, '%Y-%m-%d %H:%i:%s')               AS 发表日期,
+               CASE p.PARTYLEARN_TYPE
+                   WHEN 1 THEN '党建资料'
+                   WHEN 2 THEN '宣传学习'
+                   WHEN 3 THEN '综合治理'
+                   END                                                           AS 类型,
+               CASE p.IS_DELETE
+                   WHEN 0 THEN '否'
+                   ELSE '是'
+                   END                                                           AS 是否已删除
+        FROM p_partylearn p
+        where p.PARTYLEARN_ID = #{id}
+    </select>
+</mapper>

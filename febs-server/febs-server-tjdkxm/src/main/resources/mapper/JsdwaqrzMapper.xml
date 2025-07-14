@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cc.mrbird.febs.server.tjdkxm.mapper.JsdwaqrzMapper">
+
+    <select id="selectPageInfo" resultType="cc.mrbird.febs.common.core.entity.tjdkxm.Jsdwaqrz"></select>
+    <select id="selectInfoById" resultType="com.alibaba.fastjson.JSONObject">
+        SELECT p.JSDWAQRZ_ID                                                                AS 建设单位安全日志ID,
+               (SELECT PROJECT_NAME FROM p_project WHERE PROJECT_ID = p.JSDWAQRZ_PROJECTID) AS 所属项目,
+               DATE_FORMAT(p.JSDWAQRZ_CREATETIME, '%Y-%m-%d %H:%i:%s')                      AS 记录时间,
+               (SELECT REALNAME FROM t_user WHERE USER_ID = p.JSDWAQRZ_CREATEMANID)         AS 记录人,
+               p.JSDWAQRZ_JSDWXMFZR                                                         AS 建设单位项目负责人,
+               p.JSDWAQRZ_SGRS                                                              AS 施工人数,
+               p.JSDWAQRZ_JDQK                                                              AS 当日施工主要记录,
+               CASE
+                   p.JSDWAQRZ_XTWTFLAG
+                   WHEN 0 THEN
+                       '无'
+                   ELSE '有'
+                   END                                                                      AS 当天协调问题结果,
+               p.JSDWAQRZ_GDHYJK                                                            AS 工地会议简况,
+               p.JSDWAQRZ_GJJCQK                                                            AS 各级检查情况,
+               p.JSDWAQRZ_WDGCJD                                                            AS 危大工程编制_审查_交底,
+               p.JSDWAQRZ_WDGCSSQK                                                          AS 危大工程实施情况,
+               p.JSDWAQRZ_WDGCYSQK                                                          AS 危大工程检查验收情况,
+               p.JSDWAQRZ_CGWDGCLZQK                                                        AS 超过危大工程论证情况,
+               p.JSDWAQRZ_WDGCJCQK                                                          AS 危大工程监测情况,
+               p.JSDWAQRZ_GCJLLZQK                                                          AS 工程监理履职情况,
+               p.JSDWAQRZ_JLBG                                                              AS 监理报告和处理情况,
+               p.JSDWAQRZ_QT                                                                AS 未处理完毕_待解决的情况,
+               p.JSDWAQRZ_MAXQW                                                             AS 最高气温,
+               p.JSDWAQRZ_MINQW                                                             AS 最低气温,
+               CASE
+                   p.JSDWAQRZ_QH
+                   WHEN 1 THEN
+                       '晴'
+                   WHEN 2 THEN
+                       '阴'
+                   WHEN 3 THEN
+                       '雨'
+                   ELSE '雪'
+                   END                                                                      AS 气候,
+               CASE
+                   p.IS_DELETE
+                   WHEN 0 THEN
+                       '否'
+                   ELSE '是'
+                   END                                                                      AS 是否已删除
+        FROM p_jsdwaqrz p
+        where p.JSDWAQRZ_ID = #{id}
+    </select>
+</mapper>

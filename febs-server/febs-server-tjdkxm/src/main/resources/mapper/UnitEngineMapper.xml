@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cc.mrbird.febs.server.tjdkxm.mapper.UnitEngineMapper">
+
+    <select id="selectPageInfo" resultType="cc.mrbird.febs.common.core.entity.tjdkxm.UnitEngine">
+
+    </select>
+    <select id="selectInfoById" resultType="com.alibaba.fastjson.JSONObject">
+        SELECT p.UNIT_ID                                                AS 单位项目ID,
+               (
+                   SELECT u.PROJECT_NAME
+                   FROM p_project u
+                   WHERE (u.PROJECT_ID = p.UNIT_PROJECTID))             AS 所属项目,
+               p.UNIT_NAME                                              AS 名称,
+               p.UNIT_ADDR                                              AS 地址,
+               p.UNIT_CONTRACTCODE                                      AS 合同编码,
+               p.UNIT_PERMITNUMBER                                      AS 施工许可证号,
+               p.UNIT_STANDARDS                                         AS 资质标准技术指标,
+               p.UNIT_INDICATORS                                        AS 资质申报技术指标,
+               p.UNIT_SINGLECONTRACTPRICE                               AS 单项合同价_万元,
+               p.UNIT_SINGlETLEMENTPRICE                                AS 单项结算价_万元,
+               p.UNIT_CONTRACTMETHOD                                    AS 工程承包方式,
+               p.UNIT_CONSTRUCTION                                      AS 施工组织方式,
+               DATE_FORMAT(p.UNIT_PLANSTARTTIME, '%Y-%m-%d %H:%i:%s')   AS 计划开工日期,
+               DATE_FORMAT(p.UNIT_PLANENDTIME, '%Y-%m-%d %H:%i:%s')     AS 计划竣工日期,
+               p.UNIT_PLANDAYS                                          AS 计划工期_天,
+               DATE_FORMAT(p.UNIT_ACTUALSTARTTIME, '%Y-%m-%d %H:%i:%s') AS 实际开工日期,
+               DATE_FORMAT(p.UNIT_ACTUALENDTIME, '%Y-%m-%d %H:%i:%s')   AS 实际竣工日期,
+               p.UNIT_ACUALEDAYS                                        AS 实际工期_天,
+               p.UNIT_OTHERINFO                                         AS 其它说明,
+               (
+                   SELECT u.REALNAME
+                   FROM t_user u
+                   WHERE (u.USER_ID = p.CREATE_USERID))                 AS 创建人,
+               p.CREATE_TIME                                            AS 创建时间,
+               CASE
+                   p.IS_DELETE
+                   WHEN 0 THEN
+                       '否'
+                   ELSE '是'
+                   END                                                  AS 是否已删除
+        FROM p_unitengine p
+        where p.UNIT_ID = #{id}
+    </select>
+</mapper>

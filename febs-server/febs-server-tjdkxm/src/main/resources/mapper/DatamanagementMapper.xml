@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cc.mrbird.febs.server.tjdkxm.mapper.DatamanagementMapper">
+
+    <select id="selectPageInfo" resultType="cc.mrbird.febs.common.core.entity.tjdkxm.Datamanagement">
+        SELECT p.DATAMANAGEMENT_ID,
+        p.DATAMANAGEMENT_PID,
+        (SELECT PROJECT_NAME FROM p_project b WHERE b.PROJECT_ID = p.DATAMANAGEMENT_PID) projectName,
+        p.DATAMANAGEMENT_NAME,
+        p.DATAMANAGEMENT_USERID,
+        (SELECT u.REALNAME FROM t_user u WHERE u.USER_ID = p.DATAMANAGEMENT_USERID) datamanagementUserName,
+        p.DATAMANAGEMENT_TIME,
+        p.DATAMANAGEMENT_ADDR,
+        p.DATAMANAGEMENT_TYPE,
+        p.DATAMANAGEMENT_CLASSID,
+        p.DANGER_UNITENGINEID AS DANGER_UNITENGINEID,
+        (SELECT u.UNIT_NAME FROM p_unitengine u WHERE (u.UNIT_ID = p.DANGER_UNITENGINEID)) AS unitengineName,
+        p.DANGER_PARCELID AS DANGER_PARCELID,
+        (SELECT u.PARCEL_NAME FROM p_parcel u WHERE (u.PARCEL_ID = p.DANGER_PARCELID)) AS parcelName,
+        p.DANGER_SUBITEMID AS DANGER_SUBITEMID,
+        (SELECT u.SUBITEM_NAME FROM p_subitem u WHERE (u.SUBITEM_ID = p.DANGER_SUBITEMID)) AS subitemName,
+        (SELECT DOCUMENTCLASS_NAME
+        FROM p_documentclass b
+        WHERE b.DOCUMENTCLASS_ID = p.DATAMANAGEMENT_CLASSID) datamanagementClassName,
+        p.IS_DELETE
+        FROM p_datamanagement p
+        where 1=1
+        <if test="ew != null">
+            <if test="ew.nonEmptyOfWhere">
+                AND
+            </if>
+            ${ew.sqlSegment}
+        </if>
+    </select>
+    <select id="selectInfoById" resultType="com.alibaba.fastjson.JSONObject">
+        SELECT p.DATAMANAGEMENT_ID                                     AS 资料ID,
+               (SELECT PROJECT_NAME
+                FROM p_project
+                WHERE IS_DELETE = 0
+                  AND PROJECT_ID = p.DATAMANAGEMENT_PID)               AS 所属项目,
+               p.DATAMANAGEMENT_NAME                                   AS 资料名称,
+               (SELECT u.REALNAME
+                FROM t_user u
+                WHERE u.USER_ID = p.DATAMANAGEMENT_USERID)             AS 上传人,
+               DATE_FORMAT(p.DATAMANAGEMENT_TIME, '%Y-%m-%d %H:%i:%s') AS 上传时间,
+               p.DATAMANAGEMENT_ADDR                                   AS 文件地址,
+               p.DATAMANAGEMENT_TYPE                                   AS 类型,
+               (select DOCUMENTCLASS_NAME
+                from p_documentclass
+                where DOCUMENTCLASS_ID = p.DATAMANAGEMENT_CLASSID)     AS 资料分类名称,
+               CASE p.IS_DELETE
+                   WHEN 0 THEN '否'
+                   ELSE '是'
+                   END                                                 AS 是否已删除
+        FROM p_datamanagement p
+        where p.DATAMANAGEMENT_ID = #{id}
+    </select>
+</mapper>
