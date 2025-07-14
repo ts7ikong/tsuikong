@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cc.mrbird.febs.server.system.mapper.OrgStructureMapper">
+    <select id="selectPageInfo" resultType="cc.mrbird.febs.common.core.entity.system.OrgStructure">
+        SELECT
+        p.ID,
+        p.PARENT_ID,
+        (SELECT p1.NAME from p_org_structure p1 where p1.ID=p.PARENT_ID) AS parentName,
+        p.NAME,
+        p.ADDR,
+        p.`EXPLAIN`,
+        p.EXTEND_INFO,
+        p.CREATE_USERID,
+        p.CREATE_TIME,
+        p.IS_DELETE
+        FROM
+        p_org_structure p
+        where p.IS_DELETE=0
+        <if test="ew != null">
+            <if test="ew.nonEmptyOfWhere">
+                AND
+            </if>
+            ${ew.sqlSegment}
+        </if>
+
+    </select>
+    <select id="selectInfoById" resultType="com.alibaba.fastjson.JSONObject">
+        SELECT p.ID                                                      AS 组织结构ID,
+               (SELECT NAME FROM p_org_structure WHERE ID = p.PARENT_ID) AS 组织结构父名称,
+               p.NAME                                                    AS 名称,
+               p.ADDR                                                    AS 地址,
+               p.EXPLAIN                                                 AS 说明,
+               p.EXTEND_INFO ->> '$.name' AS 扩展信息_名称,
+            p.EXTEND_INFO ->> '$.number' AS 扩展信息_电话,
+            (SELECT REALNAME FROM t_user WHERE USER_ID = p.CREATE_USERID) AS 创建人,
+            DATE_FORMAT(p.CREATE_TIME, '%Y-%m-%d %H:%i:%s') AS 创建时间,
+            CASE
+            p.IS_DELETE
+            WHEN 0 THEN
+            '否'
+            ELSE '是'
+        END
+        AS 是否已删除
+        FROM p_org_structure p
+        WHERE p.ID =
+        #{id}
+    </select>
+    <resultMap type="cc.mrbird.febs.common.core.entity.system.OrgStructureDto" id="maps">
+        <id property="id" column="ID"/>
+        <result property="label" column="NAME"/>
+        <result property="parentId" column="PARENT_ID"/>
+        <!-- 一对多级联查询，ofType表示集合中的元素类型，将id传递给selectOrderById -->
+        <collection property="projects"
+                    ofType="cc.mrbird.febs.common.core.entity.system.ProjectDto" columnPrefix="str_">
+            <result property="id" column="PROJECT_ID"/>
+            <result property="label" column="projectName"/>
+        </collection>
+    </resultMap>
+    <select id="selectOrgProjectMaps" resultType="java.util.Map"
+            resultMap="maps">
+        SELECT o.ID,
+               o.NAME,
+               o.PARENT_ID,
+               p.PROJECT_ID as str_PROJECT_ID,
+               (
+                   SELECT pt.PROJECT_NAME
+                   FROM p_project pt
+                   WHERE pt.IS_DELETE = 0
+                     AND pt.PROJECT_ID = p.PROJECT_ID
+               )            AS str_projectName
+        FROM p_org_structure o
+                 LEFT JOIN p_org_structure_project p ON o.ID = p.TABLE_ID
+        where o.IS_DELETE = 0
+    </select>
+</mapper>

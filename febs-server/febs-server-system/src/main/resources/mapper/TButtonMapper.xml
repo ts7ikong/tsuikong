@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cc.mrbird.febs.server.system.mapper.TButtonMapper">
+
+    <select id="getButtonByUserId" resultType="cc.mrbird.febs.common.core.entity.system.TButton">
+        SELECT DISTINCT b.BUTTON_ID,
+                        b.BUTTON_NAME,
+                        b.BUTTON_TYPE,
+                        b.BUTTON_MENUID,
+                        (SELECT m.CLASS_TYPE FROM t_menu m WHERE m.MENU_ID = b.BUTTON_MENUID) AS type,
+                        temp.PROJECT_ID                                                       AS projectId
+        FROM t_button b
+                 RIGHT JOIN (
+            SELECT b1.BUTTON_ID,
+                   CASE
+                       WHEN b1.PROJECT_ID = -2 THEN
+                           temp.PROJECT_ID
+                       ELSE b1.PROJECT_ID
+                       END AS PROJECT_ID
+            FROM t_role_button b1
+                     RIGHT JOIN (SELECT ROLE_ID, PROJECT_ID FROM t_user_role WHERE USER_ID = #{userId}) temp
+                                ON b1.ROLE_ID = temp.ROLE_ID
+        ) temp ON b.BUTTON_ID = temp.BUTTON_ID
+        WHERE b.BUTTON_TYPE = 1
+    </select>
+</mapper>

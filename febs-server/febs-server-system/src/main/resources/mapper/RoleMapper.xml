@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cc.mrbird.febs.server.system.mapper.RoleMapper">
+    <resultMap id="roleMap" type="cc.mrbird.febs.common.core.entity.system.Role">
+        <result column="ROLE_ID" jdbcType="DECIMAL" property="roleId"/>
+        <result column="ROLE_NAME" jdbcType="VARCHAR" property="roleName"/>
+        <result column="REMARK" jdbcType="VARCHAR" property="remark"/>
+        <result column="CREATE_TIME" jdbcType="TIMESTAMP" property="createTime"/>
+        <result column="MODIFY_TIME" jdbcType="TIMESTAMP" property="modifyTime"/>
+    </resultMap>
+
+    <select id="findUserRole" resultMap="roleMap">
+        SELECT r.*,
+        FROM t_role r
+                 LEFT JOIN t_user_role ur ON (r.role_id = ur.role_id)
+                 LEFT JOIN t_user u ON (u.user_id = ur.user_id)
+        WHERE r.IS_DELETE = 0
+          and u.username = #{username}
+    </select>
+
+    <select id="findRolePage" parameterType="role" resultType="role">
+        SELECT
+        r.role_id roleId,
+        r.role_name roleName,
+        r.remark,
+        r.create_time createTime,
+        r.modify_time modifyTime,
+        GROUP_CONCAT( DISTINCT m.MENU_ID ) menuIds,
+        ( SELECT GROUP_CONCAT( DISTINCT IFNULL(rb.BUTTON_ID,'')) FROM t_role_button rb WHERE rb.ROLE_ID = r.ROLE_ID
+        GROUP BY
+        rb.ROLE_ID ) buttonIds,
+        GROUP_CONCAT( DISTINCT m.MENU_NAME ) menuNames
+        FROM
+        t_role r
+        LEFT JOIN (
+        SELECT
+        rm.ROLE_ID,
+        rm.MENU_ID,
+        m.MENU_NAME
+        FROM
+        t_role_menu rm
+        LEFT JOIN t_menu m ON rm.MENU_ID = m.MENU_ID
+        WHERE
+        m.TYPE = 1
+        ) m ON r.ROLE_ID = m.ROLE_ID
+        WHERE r.role_id > 1 AND r.IS_DELETE = 0
+        <if test="role.roleName != null and role.roleName != ''">
+            AND r.role_name like CONCAT('%',#{role.roleName},'%')
+        </if>
+        GROUP BY r.role_id
+        ORDER BY
+        r.ORDER_NUM DESC,r.ROLE_ID DESC
+    </select>
+
+    <resultMap type="cc.mrbird.febs.common.core.entity.system.RoleDto" id="maps">
+        <id property="roleId" column="roleId"/>
+        <result property="type" column="roleType"/>
+        <result property="roleName" column="roleName"/>
+        <result property="remark" column="remark"/>
+        <result property="createTime" column="createTime"/>
+        <result property="modifyTime" column="modifyTime"/>
+        <collection property="menus" ofType="cc.mrbird.febs.common.core.entity.system.RoleDtoInfo" resultMap="menus"/>
+    </resultMap>
+    <resultMap id="menus" type="cc.mrbird.febs.common.core.entity.system.RoleDtoInfo">
+        <result property="type" column="type"/>
+        <collection property="projects" ofType="cc.mrbird.febs.common.core.entity.system.RoleDtoInfo2"
+                    resultMap="projects"/>
+    </resultMap>
+    <resultMap id="projects" type="cc.mrbird.febs.common.core.entity.system.RoleDtoInfo2">
+        <result property="menuIds" column="menuIds"/>
+        <result property="menuNames" column="menuNames"/>
+        <result property="buttonIds" column="buttonIds"/>
+        <result property="projectId" column="projectId"/>
+        <result property="projectName" column="projectName"/>
+    </resultMap>
+    <select id="findRoleNewPage" parameterType="cc.mrbird.febs.common.core.entity.system.Role"
+            resultType="cc.mrbird.febs.common.core.entity.system.RoleDto" resultMap="maps">
+        SELECT
+        r.role_id AS roleId,
+        r.TYPE AS roleType,
+        r.role_name AS roleName,
+        r.remark,
+        r.create_time AS createTime,
+        r.modify_time AS modifyTime,
+        GROUP_CONCAT( DISTINCT m.menu_id ) AS menuIds,
+        (SELECT GROUP_CONCAT( IFNULL( rb.BUTTON_ID, '' ) )FROM t_role_button rb
+        WHERE rb.ROLE_ID = r.ROLE_ID AND rb.PROJECT_ID=m.PROJECT_ID
+        GROUP BY rb.ROLE_ID) AS buttonIds,
+        GROUP_CONCAT( DISTINCT m.menu_name ) AS menuNames,
+        m.PROJECT_ID AS projectId,
+        (SELECT p.PROJECT_NAME from p_project p where p.PROJECT_ID=m.PROJECT_ID) AS projectName,
+        m.CLASS_TYPE AS type
+        FROM
+        (SELECT ROLE_ID ,ROLE_NAME, REMARK, CREATE_TIME, MODIFY_TIME,ORDER_NUM,TYPE
+        FROM t_role
+        WHERE ROLE_ID > 1 AND IS_DELETE = 0
+        <if test="role.roleName != null and role.roleName != ''">
+            AND role_name like CONCAT('%',#{role.roleName},'%')
+        </if>
+        <if test="role.type != null ">
+            AND TYPE =#{role.type}
+        </if>
+        ORDER BY ORDER_NUM DESC,ROLE_ID DESC
+        LIMIT
+        <if test="pageNum != null">
+            #{pageNum},
+        </if>#{pageSize}) r
+        LEFT JOIN (
+        SELECT rm.ROLE_ID,rm.MENU_ID,m.MENU_NAME,m.CLASS_TYPE,rm.PROJECT_ID
+        FROM t_role_menu rm
+        LEFT JOIN t_menu m ON rm.MENU_ID = m.MENU_ID WHERE m.TYPE = 1
+        ) m ON r.ROLE_ID = m.ROLE_ID
+        GROUP BY r.TYPE,r.ROLE_ID,m.CLASS_TYPE,m.PROJECT_ID
+        ORDER BY r.ORDER_NUM DESC,r.ROLE_ID DESC
+    </select>
+    <select id="selectInfoById" resultType="com.alibaba.fastjson.JSONObject">
+        SELECT p.ROLE_ID                                                                                   AS 角色ID,
+               p.ROLE_NAME                                                                                 AS 角色名称,
+               p.REMARK                                                                                    AS 角色描述,
+               DATE_FORMAT(p.CREATE_TIME, '%Y-%m-%d %H:%i:%s')                                             AS 创建时间,
+               DATE_FORMAT(p.MODIFY_TIME, '%Y-%m-%d %H:%i:%s')                                             AS 修改时间,
+               GROUP_CONCAT((SELECT IFNULL(MENU_NAME, '') from t_menu where MENU_ID = rm.MENU_ID))         AS 菜单权限,
+               GROUP_CONCAT((SELECT IFNULL(BUTTON_NAME, '') from t_button where BUTTON_ID = rb.BUTTON_ID)) AS 按钮权限,
+               CASE
+                   p.IS_DELETE
+                   WHEN 0 THEN
+                       '否'
+                   ELSE '是'
+                   END                                                                                     AS 是否删除
+        FROM t_role p
+                 LEFT JOIN t_role_button rb on p.ROLE_ID = rb.ROLE_ID
+                 LEFT JOIN t_role_menu rm on p.ROLE_ID = rm.ROLE_ID
+        where p.ROLE_ID = #{id}
+        GROUP BY p.ROLE_ID
+    </select>
+    <select id="findRoleNewPageTotal" resultType="java.lang.Integer">
+        SELECT COUNT(ROLE_ID)
+        FROM t_role
+        WHERE ROLE_ID > 1 AND IS_DELETE = 0
+        <if test="role.roleName != null and role.roleName != ''">
+            AND role_name like CONCAT('%',#{role.roleName},'%')
+        </if>
+        <if test="role.type != null">
+            AND TYPE = #{role.type}
+        </if>
+    </select>
+    <select id="getSpecialPermissions" resultType="java.lang.Long">
+        SELECT ROLE_ID
+        from t_role
+        where 1 = 1 and type=2
+        <if test="ids !=null and ids.size()>0">
+            and ROLE_ID in
+            <foreach item="item" collection="ids" index="index" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+    </select>
+    <select id="getProjectIds" resultType="java.lang.Long">
+        SELECT PROJECT_ID
+        FROM p_project
+        WHERE IS_DELETE = 0
+    </select>
+    <select id="findRolePageCount" resultType="java.lang.Integer">
+        SELECT COUNT(1)
+        FROM t_role
+        WHERE ROLE_ID > 1
+        AND IS_DELETE = 0
+        <if test="role.roleName != null and role.roleName != ''">
+            AND ROLE_NAME like CONCAT('%',#{role.roleName},'%')
+        </if>
+    </select>
+
+    <select id="selectProject" resultType="cc.mrbird.febs.common.core.entity.tjdkxm.Project">
+        SELECT PROJECT_ID,PROJECT_NAME
+        from p_project
+        where 1 = 1 and IS_DELETE = 0
+        <if test="projectIds !=null and projectIds.size()>0">
+            and PROJECT_ID in
+            <foreach item="item" collection="projectIds" index="index" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+    </select>
+
+</mapper>

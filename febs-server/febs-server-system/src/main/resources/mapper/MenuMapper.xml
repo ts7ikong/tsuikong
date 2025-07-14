@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cc.mrbird.febs.server.system.mapper.MenuMapper">
+
+    <select id="findUserPermissions" resultType="menu">
+        select distinct m.perms
+        from t_role r
+                 left join t_user_role ur on (r.role_id = ur.role_id)
+                 left join t_user u on (u.user_id = ur.user_id)
+                 left join t_role_menu rm on (rm.role_id = r.role_id)
+                 left join t_menu m on (m.menu_id = rm.menu_id)
+        where u.username = #{username}
+          and r.IS_DELETE = 0
+          and m.perms is not null
+          and m.type = 1
+          and m.perms &lt;&gt; ''
+    </select>
+    <select id="findUserPermissionNews" resultType="java.lang.String">
+        SELECT GROUP_CONCAT(
+                   DISTINCT IFNULL( m.perms, '' ))
+        FROM t_role r
+                 LEFT JOIN t_user_role ur ON (r.role_id = ur.role_id)
+                 LEFT JOIN t_role_menu rm ON (rm.role_id = r.role_id)
+                 LEFT JOIN t_menu m ON (m.menu_id = rm.menu_id)
+        WHERE ur.user_id = #{userId}
+          AND r.IS_DELETE = 0
+          AND m.perms IS NOT NULL
+          AND m.type = 1
+          AND m.perms &lt;&gt; ''
+    </select>
+
+    <select id="findUserMenus" resultType="menu">
+        select m.MENU_ID,
+               m.PARENT_ID,
+               m.MENU_NAME,
+               m.ROUTE_NAME,
+               m.BELONG_MENU_ROUTE_NAME,
+               m.PATH,
+               m.MOBILE_PATH,
+               m.COMPONENT,
+               m.PERMS,
+               m.ICON,
+               m.SELECT_ICON,
+               m.TYPE,
+               m.ORDER_NUM,
+               m.CREATE_TIME,
+               m.MODIFY_TIME
+        from t_menu m
+        where 1 = 1
+          and m.MENU_ID in
+              (select distinct rm.menu_id
+               from t_role_menu rm
+                        left join t_role r on (rm.role_id = r.role_id)
+                        left join t_user_role ur on (ur.role_id = r.role_id)
+                        left join t_user u on (u.user_id = ur.user_id)
+               where u.`STATUS` &lt;&gt; '2'
+                 and r.IS_DELETE = 0
+                 and u.username = #{username}
+                 and m.type = 1)
+        order by m.order_num
+    </select>
+    <select id="findNewUserMenus" resultType="cc.mrbird.febs.common.core.entity.system.Menu">
+        SELECT DISTINCT m.MENU_ID,
+                        m.PARENT_ID,
+                        m.MENU_NAME,
+                        m.ROUTE_NAME,
+                        m.BELONG_MENU_ROUTE_NAME,
+                        m.PATH,
+                        m.MOBILE_PATH,
+                        m.COMPONENT,
+                        m.PERMS,
+                        m.ICON,
+                        m.SELECT_ICON,
+                        m.TYPE,
+                        m.ORDER_NUM,
+                        m.CREATE_TIME,
+                        m.MODIFY_TIME,
+                        m.CLASS_TYPE
+        FROM t_menu m
+                 RIGHT JOIN (
+            SELECT rm.menu_id
+            FROM t_role_menu rm
+                     LEFT JOIN t_role r ON (r.role_id = rm.role_id AND r.IS_DELETE = 0)
+                     LEFT JOIN t_user_role ur ON (ur.role_id = r.role_id)
+            WHERE ur.user_id = #{userId}
+        ) temp ON m.MENU_ID = temp.menu_id
+        WHERE m.type = 1
+        UNION
+        SELECT m.MENU_ID,
+               m.PARENT_ID,
+               m.MENU_NAME,
+               m.ROUTE_NAME,
+               m.BELONG_MENU_ROUTE_NAME,
+               m.PATH,
+               m.MOBILE_PATH,
+               m.COMPONENT,
+               m.PERMS,
+               m.ICON,
+               m.SELECT_ICON,
+               m.TYPE,
+               m.ORDER_NUM,
+               m.CREATE_TIME,
+               m.MODIFY_TIME,
+               m.CLASS_TYPE
+        FROM t_menu m
+        WHERE m.BELONG_MENU_ROUTE_NAME != '' AND m.type = 1
+        ORDER BY
+            ORDER_NUM
+    </select>
+    <resultMap type="cc.mrbird.febs.common.core.entity.system.Menu" id="maps">
+        <id property="menuId" column="MENU_ID"/>
+        <result property="parentId" column="PARENT_ID"/>
+        <result property="menuName" column="MENU_NAME"/>
+        <result property="routeName" column="ROUTE_NAME"/>
+        <result property="belongMenuRouteName" column="BELONG_MENU_ROUTE_NAME"/>
+        <result property="path" column="PATH"/>
+        <result property="mobilePath" column="MOBILE_PATH"/>
+        <result property="component" column="COMPONENT"/>
+        <result property="perms" column="PERMS"/>
+        <result property="icon" column="ICON"/>
+        <result property="selectIcon" column="SELECT_ICON"/>
+        <result property="type" column="TYPE"/>
+        <result property="orderNum" column="ORDER_NUM"/>
+        <result property="createTime" column="CREATE_TIME"/>
+        <result property="classType" column="CLASS_TYPE"/>
+        <result property="modifyTime" column="MODIFY_TIME"/>
+        <!-- 一对多级联查询，ofType表示集合中的元素类型，将id传递给selectOrderById -->
+        <collection property="tButtonList"
+                    ofType="cc.mrbird.febs.common.core.entity.system.TButton">
+            <id property="buttonId" column="BUTTON_ID"/>
+            <result property="id" column="id"/>
+            <result property="buttonName" column="BUTTON_NAME"/>
+            <result property="buttonType" column="BUTTON_MENUID"/>
+            <result property="buttonMenuid" column="BUTTON_TYPE"/>
+        </collection>
+    </resultMap>
+    <select id="getNewMenus" resultType="cc.mrbird.febs.common.core.entity.system.Menu" resultMap="maps">
+        SELECT m.MENU_ID,
+               m.PARENT_ID,
+               m.MENU_NAME,
+               m.ROUTE_NAME,
+               m.BELONG_MENU_ROUTE_NAME,
+               m.PATH,
+               m.MOBILE_PATH,
+               m.COMPONENT,
+               m.PERMS,
+               m.ICON,
+               m.SELECT_ICON,
+               m.TYPE,
+               m.CLASS_TYPE,
+               m.ORDER_NUM,
+               m.CREATE_TIME,
+               m.MODIFY_TIME,
+               b.BUTTON_ID,
+               CONCAT('b_', b.BUTTON_ID) id,
+               b.BUTTON_NAME,
+               b.BUTTON_MENUID,
+               b.BUTTON_TYPE
+        FROM t_menu m
+                 LEFT JOIN t_button b ON b.BUTTON_MENUID = m.MENU_ID
+            AND b.BUTTON_TYPE = 1
+        WHERE m.perms IS NOT NULL
+          AND m.type = 1
+          AND m.perms != ''
+        ORDER BY
+            ORDER_NUM
+    </select>
+    <select id="selectProjectMaps" resultType="java.util.Map">
+        select PROJECT_ID as id, PROJECT_NAME as label
+        from p_project
+        where IS_DELETE = 0
+    </select>
+    <resultMap id="buttonNews" type="cc.mrbird.febs.common.core.entity.system.ButtonDto">
+        <result property="type" column="CLASS_TYPE"/>
+        <result property="buttonId" column="BUTTON_ID"/>
+        <result property="roleType" column="ROLE_TYPE"/>
+        <result property="projectIds" column="buttonProjectIds"/>
+    </resultMap>
+    <select id="getButtonUserAuth"
+            resultType="cc.mrbird.febs.common.core.entity.system.ButtonDto"
+            resultMap="buttonNews">
+        SELECT m.CLASS_TYPE                                                                                   AS CLASS_TYPE,
+               IFNULL(m.BUTTON_ID, - 1)                                                                       AS BUTTON_ID,
+               GROUP_CONCAT(DISTINCT CASE WHEN ur.PROJECT_ID !=- 1 THEN ur.PROJECT_ID ELSE m.PROJECT_ID END ) AS buttonProjectIds,
+               MAX(ur.TYPE)                                                                                   AS ROLE_TYPE
+        FROM (SELECT ur.ROLE_ID, ur.PROJECT_ID, r.TYPE
+              FROM (SELECT ur.ROLE_ID, ur.PROJECT_ID FROM t_user_role ur WHERE ur.USER_ID = #{userId}) ur
+                       LEFT JOIN t_role r ON r.ROLE_ID = ur.ROLE_ID
+              WHERE r.IS_DELETE = 0) ur
+                 LEFT JOIN (
+            SELECT rb.ROLE_ID,
+                   rb.PROJECT_ID,
+                   m.BUTTON_ID,
+                   m.CLASS_TYPE
+            FROM t_role_button rb
+                     LEFT JOIN (SELECT b.BUTTON_ID, m.CLASS_TYPE
+                                FROM t_button b
+                                         LEFT JOIN t_menu m ON m.MENU_ID = b.BUTTON_MENUID) m
+                               ON m.BUTTON_ID = rb.BUTTON_ID
+        ) m ON m.ROLE_ID = ur.ROLE_ID
+        WHERE m.BUTTON_ID IS NOT NULL
+        GROUP BY m.CLASS_TYPE, m.BUTTON_ID
+        ORDER BY m.CLASS_TYPE, m.BUTTON_ID
+    </select>
+
+</mapper>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cc.mrbird.febs.server.system.mapper.VersionMapper">
+
+    <select id="selectByVersion" resultType="cc.mrbird.febs.server.system.dto.VersionDto">
+        SELECT p.ID           AS id,
+               p.VERSION      AS version,
+               p.ANDROID_PATH AS androidPath,
+               p.IOS_PATH     AS iosPath,
+               p.IS_FORCE     AS isForce,
+               p.TYPE         AS type,
+               p.CREATE_TIME  AS createTime
+        FROM p_version p
+        WHERE p.ID = (
+            SELECT p1.ID
+            FROM p_version p1
+            WHERE p1.IS_DELETE = 0
+              AND (p1.STATE = 1 OR (p1.STATE = 1 AND p1.IS_FORCE = 1))
+              AND p1.ID > (
+                IFNULL((SELECT p2.ID FROM p_version p2 WHERE p2.VERSION = #{version}), 0))
+            ORDER BY p1.IS_FORCE DESC, p1.ID DESC
+            LIMIT 1
+            )
+    </select>
+</mapper>
