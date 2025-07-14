@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>cc.mrbird</groupId>
+        <artifactId>febs-server</artifactId>
+        <version>2.2-RELEASE</version>
+    </parent>
+
+    <artifactId>febs-server-system</artifactId>
+    <name>FEBS-Server-System</name>
+    <description>FEBS-Server-System微服务系统模块</description>
+
+
+    <dependencies>
+        <dependency>
+            <groupId>cc.mrbird</groupId>
+            <artifactId>febs-common-datasource-starter</artifactId>
+            <version>${febs-cloud.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>cc.mrbird</groupId>
+            <artifactId>febs-common-redis-starter</artifactId>
+            <version>${febs-cloud.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>cc.mrbird</groupId>
+            <artifactId>febs-common-security-starter</artifactId>
+            <version>${febs-cloud.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>cc.mrbird</groupId>
+            <artifactId>febs-common-doc-starter</artifactId>
+            <version>${febs-cloud.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>cc.mrbird</groupId>
+            <artifactId>febs-common-logging-starter</artifactId>
+            <version>${febs-cloud.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>cc.mrbird</groupId>
+            <artifactId>febs-common-core</artifactId>
+            <version>${febs-cloud.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>${guava.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>fastjson</artifactId>
+            <version>${fastjson.version}</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpmime</artifactId>
+            <version>4.5</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <configuration>
+                            <outputDirectory>D:\systemData\Desktop\allinpay</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+                <!--                <configuration>-->
+                <!--                    <fork>true</fork>-->
+                <!--                    <layout>ZIP</layout>-->
+                <!--                    <includes>-->
+                <!--                        <include>-->
+                <!--                            &lt;!&ndash; 排除所有Jar &ndash;&gt;-->
+                <!--                            <groupId>nothing</groupId>-->
+                <!--                            <artifactId>nothing</artifactId>-->
+                <!--                        </include>-->
+                <!--                    </includes>-->
+                <!--                </configuration>-->
+            </plugin>
+        </plugins>
+    </build>
+
+</project>
