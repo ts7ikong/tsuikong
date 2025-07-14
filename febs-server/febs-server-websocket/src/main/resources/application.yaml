@@ -1,0 +1,7 @@
+spring:
+  application:
+    name: febs-server-websocket
+security:
+  oauth2:
+    client:
+      clientId: ${spring.application.name}
