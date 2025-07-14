@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cc.mrbird.febs.server.tjdk.mapper.FeedbackMapper">
+
+    <select id="selectInfoById" resultType="com.alibaba.fastjson.JSONObject">
+        SELECT p.FEEDBACK_ID                                     AS 反馈ID,
+               CASE
+                   p.FEEDBACK_TYPE
+                   WHEN 1 THEN
+                       '系统漏洞'
+                   WHEN 2 THEN
+                       '投诉'
+                   WHEN 3 THEN
+                       '其他'
+                   END                                           AS 反馈类型,
+               p.FEEDBACK_CONTENT                                AS 反馈内容,
+               p.FEEDBACK_NUMBER                                 AS 联系方式,
+               p.FEEDBACK_EMAL                                   AS 联系邮箱,
+               p.FEEDBACK_ANNEX                                  AS 附件,
+               DATE_FORMAT(p.FEEDBACK_TIME, '%Y-%m-%d %H:%i:%s') AS 反馈时间,
+               CASE
+                   p.IS_DELETE
+                   WHEN 0 THEN
+                       '否'
+                   ELSE '是'
+                   END                                           AS 是否已删除
+        FROM p_feedback p
+        where p.FEEDBACK_ID = #{id}
+    </select>
+</mapper>

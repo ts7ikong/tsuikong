@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cc.mrbird.febs.server.tjdk.mapper.SysnotifyMapper">
+    <select id="selectPageInfo" resultType="cc.mrbird.febs.common.core.entity.tjdk.Sysnotify">
+        SELECT
+        p.SYSNOTIFY_ID AS SYSNOTIFY_ID,
+        p.SYSNOTIFY_TITLE AS SYSNOTIFY_TITLE,
+        p.SYSNOTIFY_CONTENT AS SYSNOTIFY_CONTENT,
+        p.SYSNOTIFY_ANNX AS SYSNOTIFY_ANNX,
+        p.SYSNOTIFY_TIME AS SYSNOTIFY_TIME,
+        p.SYSNOTITY_TYPE AS SYSNOTITY_TYPE,
+        p.IS_DELETE AS IS_DELETE,
+        p.CREATE_USERID AS CREATE_USERID,
+        (SELECT u1.REALNAME FROM t_user u1 WHERE ( u1.USER_ID = p.CREATE_USERID )) AS CREATE_USERNAME,
+        group_concat(
+        CASE
+        p.SYSNOTITY_TYPE
+        WHEN 2 THEN
+        ( SELECT IFNULL(d.DEPT_NAME,'') FROM p_dept d WHERE ( d.DEPT_ID = m.USER_ID ))
+        WHEN 4 THEN
+        (SELECT IFNULL(pp.PROJECT_NAME,'') FROM p_project pp WHERE ( pp.PROJECT_ID = m.USER_ID ))
+        WHEN 5 THEN
+        ( SELECT IFNULL(u.REALNAME,'') FROM t_user u WHERE ( u.USER_ID = m.USER_ID ))
+        END
+        ) AS SYSNOTITY_CONTRANT
+        FROM
+        (
+        p_sysnotify p
+        LEFT JOIN p_systnotity_middle m ON ((
+        p.SYSNOTIFY_ID = m.TABLE_ID
+        )))
+        WHERE
+        1 = 1
+        <if test="ew != null">
+            <if test="ew.nonEmptyOfWhere">
+                AND
+            </if>
+            ${ew.sqlSegment}
+        </if>
+    </select>
+    <select id="selectInfoById" resultType="com.alibaba.fastjson.JSONObject">
+        SELECT p.SYSNOTIFY_ID                                                AS 系统通知ID,
+               p.SYSNOTIFY_TITLE                                             AS 通知标题,
+               p.SYSNOTIFY_CONTENT                                           AS 通知内容,
+               p.SYSNOTIFY_ANNX                                              AS 通知附件,
+               DATE_FORMAT(p.SYSNOTIFY_TIME, '%Y-%m-%d %H:%i:%s')            AS 下发时间,
+               CASE
+                   p.SYSNOTITY_TYPE
+                   WHEN 1 THEN
+                       '所有人'
+                   WHEN 2 THEN
+                       '部门'
+                   WHEN 4 THEN
+                       '领导班子'
+                   WHEN 5 THEN
+                       '选择特定的人'
+                   END                                                       AS 通知类型,
+               group_concat(
+                       CASE
+                           p.SYSNOTITY_TYPE
+                           WHEN 2 THEN
+                               (SELECT IFNULL(d.DEPT_NAME, '') FROM p_dept d WHERE (d.DEPT_ID = m.USER_ID))
+                           WHEN 4 THEN
+                               (SELECT IFNULL(pp.PROJECT_NAME, '') FROM p_project pp WHERE (pp.PROJECT_ID = m.USER_ID))
+                           WHEN 5 THEN
+                               (SELECT IFNULL(u.REALNAME, '') FROM t_user u WHERE (u.USER_ID = m.USER_ID))
+                           END
+                   )                                                         AS 通知对象,
+               (SELECT REALNAME FROM t_user WHERE USER_ID = p.CREATE_USERID) AS 创建人,
+               DATE_FORMAT(p.CREATE_TIME, '%Y-%m-%d %H:%i:%s')               AS 创建时间,
+               CASE
+                   p.IS_DELETE
+                   WHEN 0 THEN
+                       '否'
+                   ELSE '是'
+                   END                                                       AS 是否已删除
+        FROM p_sysnotify p
+                 LEFT JOIN p_systnotity_middle m ON p.SYSNOTIFY_ID = m.TABLE_ID
+        where p.SYSNOTIFY_ID = #{id}
+        GROUP BY p.SYSNOTIFY_ID
+    </select>
+</mapper>
