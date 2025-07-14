@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>cc.mrbird</groupId>
+        <artifactId>febs-cloud</artifactId>
+        <version>2.2-RELEASE</version>
+    </parent>
+
+    <artifactId>febs-server</artifactId>
+    <version>2.2-RELEASE</version>
+    <packaging>pom</packaging>
+    <name>FEBS-Server</name>
+    <description>FEBS-Server服务提供模块</description>
+    <properties>
+        <febs-cloud.version>2.2-RELEASE</febs-cloud.version>
+    </properties>
+    <modules>
+        <module>febs-server-system</module>
+        <module>febs-server-tjdk</module>
+        <module>febs-server-tjdkxm</module>
+        <module>febs-server-websocket</module>
+    </modules>
+
+    <dependencies>
+        <dependency>
+            <groupId>net.logstash.logback</groupId>
+            <artifactId>logstash-logback-encoder</artifactId>
+            <version>${logstash-logback-encoder.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+        </dependency>
+    </dependencies>
+</project>
